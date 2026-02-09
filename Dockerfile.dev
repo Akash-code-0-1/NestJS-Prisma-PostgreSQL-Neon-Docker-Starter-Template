@@ -1,0 +1,30 @@
+# Base image
+FROM node:20-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Copy package.json & package-lock.json
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Install dev tools globally
+RUN npm install -g ts-node-dev @nestjs/cli
+
+# Copy the app
+COPY . .
+
+# Expose port
+EXPOSE 3000
+
+# Copy entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Use entrypoint for Prisma generate + migrations
+ENTRYPOINT ["/entrypoint.sh"]
+
+# Dev command (hot reload)
+CMD ["npm", "run", "start:dev"]
