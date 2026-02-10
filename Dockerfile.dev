@@ -1,10 +1,13 @@
-# Base image
+# Dockerfile.dev
 FROM node:20-alpine
+
+# Install build tools for bcrypt/native modules
+RUN apk add --no-cache python3 make g++ bash
 
 # Set working directory
 WORKDIR /app
 
-# Copy package.json & package-lock.json
+# Copy package.json and package-lock.json first
 COPY package*.json ./
 
 # Install dependencies
@@ -19,12 +22,10 @@ COPY . .
 # Expose port
 EXPOSE 3000
 
-# Copy entrypoint script
+# Entry point for Prisma generate/migrations
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
-
-# Use entrypoint for Prisma generate + migrations
 ENTRYPOINT ["/entrypoint.sh"]
 
-# Dev command (hot reload)
+# Dev command
 CMD ["npm", "run", "start:dev"]

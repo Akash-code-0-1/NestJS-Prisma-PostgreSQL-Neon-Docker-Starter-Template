@@ -7,9 +7,70 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Example {
-  id   Int    @id @default(autoincrement())
-  name String
+model Admin {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  password     String
+  
+  // Necessary for secure JWT authentication (Logout/Refresh logic)
+  refreshToken String?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("admins")
+  @@index([name])
+  @@index([createdAt])
+  @@index([name, createdAt])
 }
 
+enum Role {
+  ADMIN
+}
+
+model Salon {
+  id              String   @id @default(uuid())
+  name            String
+  businessType    String
+  vtaNumber       String   @unique
+  employeeCount   String   // Stored as string to match dropdown values (e.g., "10", "10-50")
+  
+  // Contact info
+  email           String   @unique
+  phoneNumber     String
+  
+  // Provenance
+  country         String
+  city            String
+  province        String
+  zipCode         String
+
+  // Subscription
+  trialPeriod     String
+  initialPlan     String
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relationships
+  owners          Owner[]
+
+  @@map("salons")
+}
+
+model Owner {
+  id              String   @id @default(uuid())
+  firstName       String
+  lastName        String
+  
+  // Invitation tracking (Separate from creation logic)
+  invitationSent  Boolean  @default(false)
+
+  salonId         String
+  salon           Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime @default(now())
+  @@map("owners")
+}
 

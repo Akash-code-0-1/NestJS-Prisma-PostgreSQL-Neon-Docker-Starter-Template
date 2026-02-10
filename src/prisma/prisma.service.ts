@@ -3,13 +3,14 @@ import { PrismaClient } from '@prisma/client';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
+  user: any;
   async onModuleInit() {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     await this.$connect();
   }
 
   enableShutdownHooks(app: INestApplication) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-misused-promises
     this.$on('beforeExit' as never, async () => {
       await app.close();
     });
