@@ -1,3 +1,4 @@
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -25,52 +26,94 @@ model Admin {
   @@index([name, createdAt])
 }
 
+
+// Single user table for all roles (including future owner login)
+model User {
+  id           String   @id @default(uuid())
+  firstName    String
+  lastName     String
+  email        String   @unique
+  password     String?
+  refreshToken String?
+  role         Role
+  isActive     Boolean  @default(false)   // ADD THIS LINE
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  salonUsers   SalonUser[]
+  ownerProfile OwnerProfile?
+  employeeProfile EmployeeProfile?
+  accountantProfile AccountantProfile?
+}
+
+
+
 enum Role {
-  ADMIN
+  SUPER_ADMIN
+  SALON_OWNER
+  EMPLOYEE
+  ACCOUNTANT
 }
 
+// Salon table
 model Salon {
-  id              String   @id @default(uuid())
-  name            String
-  businessType    String
-  vtaNumber       String   @unique
-  employeeCount   String   // Stored as string to match dropdown values (e.g., "10", "10-50")
-  
-  // Contact info
-  email           String   @unique
-  phoneNumber     String
-  
-  // Provenance
-  country         String
-  city            String
-  province        String
-  zipCode         String
+  id            String   @id @default(uuid())
+  name          String
+  businessType  String
+  vtaNumber     String   @unique
+  employeeCount String
 
-  // Subscription
-  trialPeriod     String
-  initialPlan     String
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  email         String   @unique
+  phoneNumber   String
 
-  // Relationships
-  owners          Owner[]
+  country       String
+  city          String
+  province      String
+  zipCode       String
 
-  @@map("salons")
+  trialPeriod   String
+  initialPlan   String
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  salonUsers    SalonUser[]
 }
 
-model Owner {
-  id              String   @id @default(uuid())
-  firstName       String
-  lastName        String
-  
-  // Invitation tracking (Separate from creation logic)
-  invitationSent  Boolean  @default(false)
+// Bridge table for multi-tenant relationship
+model SalonUser {
+  id       String @id @default(uuid())
+  userId   String
+  salonId  String
 
-  salonId         String
-  salon           Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  salon    Salon  @relation(fields: [salonId], references: [id], onDelete: Cascade)
 
-  createdAt       DateTime @default(now())
-  @@map("owners")
+  @@unique([userId, salonId])
+  @@index([salonId])
+  @@index([userId])
 }
 
+// Optional profile for owners
+model OwnerProfile {
+  id             String @id @default(uuid())
+  userId         String @unique
+  user           User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invitationSent Boolean @default(false)
+}
+
+// Optional profiles for future employees/accountants
+model EmployeeProfile {
+  id          String @id @default(uuid())
+  userId      String @unique
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  salary      Float?
+  designation String?
+}
+
+model AccountantProfile {
+  id            String @id @default(uuid())
+  userId        String @unique
+  user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  licenseNumber String?
+}

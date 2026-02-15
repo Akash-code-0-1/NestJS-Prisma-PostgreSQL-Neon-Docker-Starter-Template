@@ -11,6 +11,8 @@ export class OwnerDto {
   @IsString() @IsNotEmpty() firstName: string;
   @IsString() @IsNotEmpty() lastName: string;
   id: any;
+  email: string;
+  invitationSent: boolean;
 }
 
 export class CreateSalonDto {

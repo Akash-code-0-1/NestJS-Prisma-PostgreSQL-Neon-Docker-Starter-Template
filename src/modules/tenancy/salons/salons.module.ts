@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
 import { SalonsService } from './salons.service';
 import { SalonsController } from './salons.controller';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaModule } from '../../../core/prisma/prisma.module';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
+  imports: [PrismaModule, JwtModule.register({})],
   controllers: [SalonsController],
-  providers: [SalonsService, PrismaService],
-  exports: [SalonsService], // Exported in case other modules (like Billing) need it
+  providers: [SalonsService],
+  exports: [SalonsService],
 })
 export class SalonsModule {}

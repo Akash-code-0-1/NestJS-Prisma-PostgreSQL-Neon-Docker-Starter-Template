@@ -1,4 +1,4 @@
-// src/modules/salons/entities/salon.entity.ts
+import { OwnerEntity } from './owner.entity';
 
 export class SalonEntity {
   id: string;
@@ -7,26 +7,21 @@ export class SalonEntity {
   vtaNumber: string;
   employeeCount: string;
 
-  // Contact Info
   email: string;
   phoneNumber: string;
 
-  // Provenance
   country: string;
   city: string;
   province: string;
   zipCode: string;
 
-  // Subscription
   trialPeriod: string;
   initialPlan: string;
 
-  // Timestamps
   createdAt: Date;
   updatedAt: Date;
 
-  // Relations (Only included if you fetch them)
-  owners?: any[];
+  owners?: OwnerEntity[];
 
   constructor(partial: Partial<SalonEntity>) {
     Object.assign(this, partial);

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from './users/users.service';
@@ -46,6 +48,7 @@ export class AuthService {
   }
 
   private async generateAndStoreTokens(admin: any) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const payload = { sub: admin.id, email: admin.email, role: 'ADMIN' };
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call

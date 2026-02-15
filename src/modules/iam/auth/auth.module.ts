@@ -4,10 +4,12 @@ import { AuthController } from './auth.controller';
 import { UsersModule } from './users/users.module';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { OwnerAuthModule } from './salon-owners/salonOwner-auth.module';
 
 @Module({
   imports: [
     UsersModule,
+    OwnerAuthModule,
     JwtModule.register({
       secret: process.env.JWT_ACCESS_SECRET,
       signOptions: { expiresIn: '15m' },

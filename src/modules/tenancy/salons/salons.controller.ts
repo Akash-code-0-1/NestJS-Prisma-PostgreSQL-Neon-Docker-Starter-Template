@@ -12,11 +12,12 @@ import {
 import { SalonsService } from './salons.service';
 import { CreateSalonDto } from './dto/create-salon.dto';
 import { UpdateSalonDto } from './dto/update-salon.dto';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
-import { Roles } from '../../common/decorators/roles.decorators';
+import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../core/guards/roles.guard';
+import { Roles } from '../../../core/decorators/roles.decorators';
+import { SetOwnerPasswordDto } from './dto/set-owner-password.dto';
 
-@Controller('salons')
+@Controller('iam/admin/salons')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class SalonsController {
   constructor(private readonly salonsService: SalonsService) {}
@@ -31,7 +32,7 @@ export class SalonsController {
   findAll(
     @Query('page') page: string,
     @Query('limit') limit: string,
-    @Query('search') search?: string, // optional query param
+    @Query('search') search?: string,
   ) {
     return this.salonsService.findAll(
       Number(page) || 1,
@@ -55,5 +56,14 @@ export class SalonsController {
   @Roles('ADMIN')
   remove(@Param('id') id: string) {
     return this.salonsService.remove(id);
+  }
+
+  // PATCH route for owner to set password
+  @Patch('owner/:ownerId/set-password')
+  setOwnerPassword(
+    @Param('ownerId') ownerId: string,
+    @Body() dto: SetOwnerPasswordDto,
+  ) {
+    return this.salonsService.setOwnerPassword(ownerId, dto.password);
   }
 }

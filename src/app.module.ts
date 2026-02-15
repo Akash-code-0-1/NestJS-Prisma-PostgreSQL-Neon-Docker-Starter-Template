@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
-import { PrismaModule } from './prisma/prisma.module';
-import { AuthModule } from './modules/auth/auth.module';
-import { UsersModule } from './modules/auth/users/users.module';
-import { SalonsModule } from './modules/salons/salons.module';
+import { PrismaModule } from './core/prisma/prisma.module';
+import { AuthModule } from './modules/iam/auth/auth.module';
+import { UsersModule } from './modules/iam/auth/users/users.module';
+import { SalonsModule } from './modules/tenancy/salons/salons.module';
 import { HealthModule } from './health/health.module'; // ← import this
+import { OwnerAuthModule } from './modules/iam/auth/salon-owners/salonOwner-auth.module';
 
 @Module({
   imports: [
@@ -11,7 +12,8 @@ import { HealthModule } from './health/health.module'; // ← import this
     AuthModule,
     UsersModule,
     SalonsModule,
-    HealthModule, // ← add here
+    HealthModule,
+    OwnerAuthModule,
   ],
 })
 export class AppModule {}
