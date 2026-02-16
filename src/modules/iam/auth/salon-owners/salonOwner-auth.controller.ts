@@ -17,7 +17,6 @@ export class OwnerAuthController {
   @UseGuards(JwtAuthGuard)
   @Roles('SALON_OWNER')
   logout(@Req() req: any) {
-    // req.user is populated by JwtStrategy
     const userId = req.user.sub;
     return this.ownerAuthService.logout(userId);
   }

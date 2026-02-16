@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,13 +7,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// -----------------
+// Platform Admin
+// -----------------
 model Admin {
   id           String   @id @default(uuid())
   name         String
   email        String   @unique
   password     String
-  
-  // Necessary for secure JWT authentication (Logout/Refresh logic)
   refreshToken String?
 
   createdAt    DateTime @default(now())
@@ -26,8 +26,9 @@ model Admin {
   @@index([name, createdAt])
 }
 
-
-// Single user table for all roles (including future owner login)
+// -----------------
+// Users (Global Identity)
+// -----------------
 model User {
   id           String   @id @default(uuid())
   firstName    String
@@ -35,19 +36,23 @@ model User {
   email        String   @unique
   password     String?
   refreshToken String?
-  role         Role
-  isActive     Boolean  @default(false)   // ADD THIS LINE
+  isActive     Boolean  @default(false)   // Account active or not
+  role         Role?    // KEEP TEMPORARILY FOR SAFE MIGRATION
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  salonUsers   SalonUser[]
-  ownerProfile OwnerProfile?
-  employeeProfile EmployeeProfile?
+  // Relationships
+  salonUsers        SalonUser[]
+  ownerProfile      OwnerProfile?
+  employeeProfile   EmployeeProfile?
   accountantProfile AccountantProfile?
+
+  @@index([email])
 }
 
-
-
+// -----------------
+// Role Enum (Platform / Tenant roles)
+// -----------------
 enum Role {
   SUPER_ADMIN
   SALON_OWNER
@@ -55,36 +60,41 @@ enum Role {
   ACCOUNTANT
 }
 
-// Salon table
+// -----------------
+// Salon (Tenant)
+// -----------------
 model Salon {
   id            String   @id @default(uuid())
   name          String
   businessType  String
   vtaNumber     String   @unique
   employeeCount String
-
   email         String   @unique
   phoneNumber   String
-
   country       String
   city          String
   province      String
   zipCode       String
-
   trialPeriod   String
   initialPlan   String
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?   // soft delete
+  createdBy     String?     // optional audit
+  updatedBy     String?     // optional audit
 
   salonUsers    SalonUser[]
 }
 
-// Bridge table for multi-tenant relationship
+// -----------------
+// Multi-Tenant Bridge: User ↔ Salon
+// -----------------
 model SalonUser {
   id       String @id @default(uuid())
   userId   String
   salonId  String
+  role     Role?   // NEW: Tenant-scoped role
 
   user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   salon    Salon  @relation(fields: [salonId], references: [id], onDelete: Cascade)
@@ -92,23 +102,27 @@ model SalonUser {
   @@unique([userId, salonId])
   @@index([salonId])
   @@index([userId])
+  @@index([salonId, role])
 }
 
-// Optional profile for owners
+// -----------------
+// Optional Role Profiles
+// -----------------
 model OwnerProfile {
   id             String @id @default(uuid())
   userId         String @unique
   user           User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   invitationSent Boolean @default(false)
+  deletedAt      DateTime?
 }
 
-// Optional profiles for future employees/accountants
 model EmployeeProfile {
-  id          String @id @default(uuid())
-  userId      String @unique
-  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  salary      Float?
+  id          String  @id @default(uuid())
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  salary      Decimal? @db.Decimal(10,2) // safer for finance
   designation String?
+  deletedAt   DateTime?
 }
 
 model AccountantProfile {
@@ -116,4 +130,5 @@ model AccountantProfile {
   userId        String @unique
   user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   licenseNumber String?
+  deletedAt     DateTime?
 }

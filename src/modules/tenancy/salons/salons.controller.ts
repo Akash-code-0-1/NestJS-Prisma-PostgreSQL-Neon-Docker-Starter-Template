@@ -22,7 +22,7 @@ import { SetOwnerPasswordDto } from './dto/set-owner-password.dto';
 export class SalonsController {
   constructor(private readonly salonsService: SalonsService) {}
 
-  @Post()
+  @Post('create')
   @Roles('ADMIN')
   create(@Body() dto: CreateSalonDto) {
     return this.salonsService.create(dto);
@@ -46,13 +46,13 @@ export class SalonsController {
     return this.salonsService.findOne(id);
   }
 
-  @Patch(':id')
+  @Patch('update/:id')
   @Roles('ADMIN')
   update(@Param('id') id: string, @Body() dto: UpdateSalonDto) {
     return this.salonsService.update(id, dto);
   }
 
-  @Delete(':id')
+  @Delete('delete/:id')
   @Roles('ADMIN')
   remove(@Param('id') id: string) {
     return this.salonsService.remove(id);

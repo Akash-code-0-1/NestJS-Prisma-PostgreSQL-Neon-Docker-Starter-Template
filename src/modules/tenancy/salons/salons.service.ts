@@ -21,22 +21,32 @@ export class SalonsService {
   ) {}
 
   // CREATE SALON WITH MULTIPLE OWNERS
+
   async create(dto: CreateSalonDto) {
     const { owners, ...salonData } = dto;
 
-    // Transaction for creation
+    // 1️⃣ Create salon inside a transaction to ensure atomicity for salon itself
     const createdSalon = await this.prisma.$transaction(async (tx) => {
       const existing = await tx.salon.findFirst({
         where: { OR: [{ vtaNumber: dto.vtaNumber }, { email: dto.email }] },
       });
       if (existing) throw new ConflictException('VTA or Email already exists');
 
-      const salon = await tx.salon.create({ data: salonData });
+      // Only create the salon here
+      return tx.salon.create({ data: salonData });
+    });
 
-      if (owners && owners.length > 0) {
-        for (const ownerDto of owners) {
+    // 2️⃣ Create owners OUTSIDE transaction to avoid timeout
+    if (owners && owners.length > 0) {
+      for (const ownerDto of owners) {
+        // Check if user already exists
+        let user = await this.prisma.user.findUnique({
+          where: { email: ownerDto.email },
+        });
+
+        if (!user) {
           // Create user
-          const user = await tx.user.create({
+          user = await this.prisma.user.create({
             data: {
               firstName: ownerDto.firstName,
               lastName: ownerDto.lastName,
@@ -45,26 +55,30 @@ export class SalonsService {
             },
           });
 
-          // Create ownerProfile
-          await tx.ownerProfile.create({
+          // Create owner profile
+          await this.prisma.ownerProfile.create({
             data: { userId: user.id, invitationSent: false },
           });
-
-          // Link user to salon
-          await tx.salonUser.create({
-            data: { userId: user.id, salonId: salon.id },
-          });
         }
+
+        // Link user to salon
+        await this.prisma.salonUser.upsert({
+          where: {
+            userId_salonId: { userId: user.id, salonId: createdSalon.id },
+          },
+          create: { userId: user.id, salonId: createdSalon.id },
+          update: {}, // do nothing if link exists
+        });
       }
+    }
 
-      return salon;
-    });
-
-    // Fetch salon with owners outside transaction
+    // 3️⃣ Fetch salon with owners and return
     return this.prisma.salon.findUnique({
       where: { id: createdSalon.id },
       include: {
-        salonUsers: { include: { user: { include: { ownerProfile: true } } } },
+        salonUsers: {
+          include: { user: { include: { ownerProfile: true } } },
+        },
       },
     });
   }
@@ -167,24 +181,26 @@ export class SalonsService {
     return salon;
   }
 
-  // UPDATE SALON + OWNERS
   async update(id: string, dto: UpdateSalonDto) {
-    const salon = await this.prisma.salon.findUnique({ where: { id } });
-    if (!salon) throw new NotFoundException('Salon not found');
-
     const { owners, ...salonData } = dto;
 
-    const updatedSalon = await this.prisma.salon.update({
+    // 1️⃣ Update the salon basic info first
+    const salon = await this.prisma.salon.update({
       where: { id },
       data: salonData,
     });
 
+    if (!salon) throw new NotFoundException('Salon not found');
+
+    // 2️⃣ Update or create owners outside transaction to avoid timeout
     if (owners && owners.length > 0) {
       for (const ownerDto of owners) {
-        // Upsert owner user
+        // 2a. Check if user exists
         let user = await this.prisma.user.findUnique({
           where: { email: ownerDto.email },
         });
+
+        // 2b. Create user if not exists
         if (!user) {
           user = await this.prisma.user.create({
             data: {
@@ -195,21 +211,28 @@ export class SalonsService {
             },
           });
 
+          // Create owner profile
           await this.prisma.ownerProfile.create({
             data: { userId: user.id, invitationSent: false },
           });
         }
 
-        // Upsert salon-user link
+        // 2c. Upsert salon-user link
         await this.prisma.salonUser.upsert({
           where: { userId_salonId: { userId: user.id, salonId: id } },
-          create: { userId: user.id, salonId: id },
-          update: {},
+          create: { userId: user.id, salonId: id, role: 'SALON_OWNER' },
+          update: { role: 'SALON_OWNER' }, // keep role updated
         });
       }
     }
 
-    return this.findOne(id);
+    // 3️⃣ Return updated salon with all owners
+    return this.prisma.salon.findUnique({
+      where: { id: salon.id },
+      include: {
+        salonUsers: { include: { user: { include: { ownerProfile: true } } } },
+      },
+    });
   }
 
   // DELETE SALON
