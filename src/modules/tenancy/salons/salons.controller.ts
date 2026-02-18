@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 import {
   Controller,
   Post,
@@ -16,6 +18,7 @@ import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../core/guards/roles.guard';
 import { Roles } from '../../../core/decorators/roles.decorators';
 import { SetOwnerPasswordDto } from './dto/set-owner-password.dto';
+import { FilterSalonDto } from './dto/admin-salon-filter.dto';
 
 @Controller('iam/admin/salons')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -23,22 +26,29 @@ export class SalonsController {
   constructor(private readonly salonsService: SalonsService) {}
 
   @Post('create')
-  @Roles('ADMIN')
+  @Roles('SUPER_ADMIN')
   create(@Body() dto: CreateSalonDto) {
     return this.salonsService.create(dto);
   }
 
+  // ✅ Updated findAll using FilterSalonDto
   @Get()
-  findAll(
-    @Query('page') page: string,
-    @Query('limit') limit: string,
-    @Query('search') search?: string,
-  ) {
-    return this.salonsService.findAll(
-      Number(page) || 1,
-      Number(limit) || 10,
-      search,
-    );
+  @Roles('SUPER_ADMIN')
+  findAll(@Query() query: FilterSalonDto) {
+    // Convert numeric string fields to numbers
+    const filters = {
+      ...query,
+      page: query.page ? Number(query.page) : 1,
+      limit: query.limit ? Number(query.limit) : 10,
+      minEmployees: query.minEmployees ? Number(query.minEmployees) : undefined,
+      maxEmployees: query.maxEmployees ? Number(query.maxEmployees) : undefined,
+      minRevenue: query.minRevenue ? Number(query.minRevenue) : undefined,
+      maxRevenue: query.maxRevenue ? Number(query.maxRevenue) : undefined,
+      minSupport: query.minSupport ? Number(query.minSupport) : undefined,
+      maxSupport: query.maxSupport ? Number(query.maxSupport) : undefined,
+    };
+
+    return this.salonsService.findAll(filters);
   }
 
   @Get(':id')
@@ -47,13 +57,13 @@ export class SalonsController {
   }
 
   @Patch('update/:id')
-  @Roles('ADMIN')
+  @Roles('SUPER_ADMIN')
   update(@Param('id') id: string, @Body() dto: UpdateSalonDto) {
     return this.salonsService.update(id, dto);
   }
 
   @Delete('delete/:id')
-  @Roles('ADMIN')
+  @Roles('SUPER_ADMIN')
   remove(@Param('id') id: string) {
     return this.salonsService.remove(id);
   }
@@ -64,6 +74,7 @@ export class SalonsController {
     @Param('ownerId') ownerId: string,
     @Body() dto: SetOwnerPasswordDto,
   ) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     return this.salonsService.setOwnerPassword(ownerId, dto.password);
   }
 }

@@ -12,7 +12,7 @@ import { OwnerAuthModule } from './salon-owners/salonOwner-auth.module';
     OwnerAuthModule,
     JwtModule.register({
       secret: process.env.JWT_ACCESS_SECRET,
-      signOptions: { expiresIn: '15m' },
+      signOptions: { expiresIn: '7d' },
     }),
   ],
   providers: [AuthService, JwtStrategy],

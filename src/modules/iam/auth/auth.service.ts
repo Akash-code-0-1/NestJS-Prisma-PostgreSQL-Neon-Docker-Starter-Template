@@ -49,12 +49,12 @@ export class AuthService {
 
   private async generateAndStoreTokens(admin: any) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const payload = { sub: admin.id, email: admin.email, role: 'ADMIN' };
+    const payload = { sub: admin.id, email: admin.email, role: 'SUPER_ADMIN' };
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     const accessToken = this.jwtService.sign(payload, {
       secret: process.env.JWT_ACCESS_SECRET,
-      expiresIn: '15m',
+      expiresIn: '7d',
     });
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call

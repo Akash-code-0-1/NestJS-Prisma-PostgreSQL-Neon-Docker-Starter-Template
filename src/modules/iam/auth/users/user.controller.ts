@@ -11,7 +11,7 @@ export class UsersController {
   constructor(private usersService: UsersService) {}
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @Roles('SUPER_ADMIN')
   findAll(
     @Query('page') page: string,
     @Query('limit') limit: string,
@@ -23,7 +23,7 @@ export class UsersController {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @Roles('SUPER_ADMIN')
   create(@Body() dto: CreateUserDto) {
     return this.usersService.create(dto);
   }

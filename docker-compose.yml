@@ -11,7 +11,17 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL}
       NODE_ENV: development
+      REDIS_HOST: redis  # Connect to the 'redis' service in Docker
+      REDIS_PORT: 6379   # Default Redis port
     volumes:
-      - .:/app
-      - /app/node_modules
+      - .:/app:cached
+    restart: always
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"  # Exposing Redis on the default port
     restart: always
