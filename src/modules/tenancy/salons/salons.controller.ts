@@ -17,7 +17,7 @@ import { UpdateSalonDto } from './dto/update-salon.dto';
 import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../core/guards/roles.guard';
 import { Roles } from '../../../core/decorators/roles.decorators';
-import { SetOwnerPasswordDto } from './dto/set-owner-password.dto';
+import { SetOwnerPasswordDto } from '../../iam/auth/salon-owners/dto/set-owner-password.dto';
 import { FilterSalonDto } from './dto/admin-salon-filter.dto';
 
 @Controller('iam/admin/salons')

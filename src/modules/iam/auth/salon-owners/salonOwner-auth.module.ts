@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
-import { OwnerAuthService } from './salonOwner-auth.service';
-import { OwnerAuthController } from './salonOwner-auth.controller';
+import { SalonOwnerAuthService } from './salonOwner-auth.service';
+import { SalonOwnerAuthController } from './salonOwner-auth.controller';
 import { PrismaModule } from '../../../../core/prisma/prisma.module';
 import { JwtService } from '@nestjs/jwt';
 
 @Module({
   imports: [PrismaModule],
-  controllers: [OwnerAuthController],
-  providers: [OwnerAuthService, JwtService],
-  exports: [OwnerAuthService],
+  controllers: [SalonOwnerAuthController],
+  providers: [SalonOwnerAuthService, JwtService],
+  exports: [SalonOwnerAuthService],
 })
 export class OwnerAuthModule {}

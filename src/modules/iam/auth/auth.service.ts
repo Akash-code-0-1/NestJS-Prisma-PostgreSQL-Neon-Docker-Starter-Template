@@ -1,20 +1,18 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from './users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
+import { RedisService } from '../../../core/redis/redis.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    private readonly redisService: RedisService, // Inject RedisService
   ) {}
 
   async register(dto: any) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const admin = await this.usersService.create(dto);
     return this.generateAndStoreTokens(admin);
   }
@@ -23,7 +21,6 @@ export class AuthService {
     const admin = await this.usersService.findByEmail(dto.email);
     if (!admin) throw new UnauthorizedException('Invalid credentials');
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     const isMatch = await bcrypt.compare(dto.password, admin.password);
     if (!isMatch) throw new UnauthorizedException('Invalid credentials');
 
@@ -32,7 +29,6 @@ export class AuthService {
 
   async refreshTokens(adminId: string, refreshToken: string) {
     const admin = await this.usersService.findById(adminId);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (!admin || !admin.refreshToken)
       throw new UnauthorizedException('Access denied');
 
@@ -44,20 +40,21 @@ export class AuthService {
 
   async logout(adminId: string) {
     await this.usersService.updateRefreshToken(adminId, null);
+    // Remove the tokens from Redis
+    await this.redisService.delete(`auth:${adminId}:access`);
+    await this.redisService.delete(`auth:${adminId}:refresh`);
+
     return { message: 'Logged out' };
   }
 
   private async generateAndStoreTokens(admin: any) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const payload = { sub: admin.id, email: admin.email, role: 'SUPER_ADMIN' };
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     const accessToken = this.jwtService.sign(payload, {
       secret: process.env.JWT_ACCESS_SECRET,
       expiresIn: '7d',
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     const refreshToken = this.jwtService.sign(payload, {
       secret: process.env.JWT_REFRESH_SECRET,
       expiresIn: '7d',
@@ -65,6 +62,18 @@ export class AuthService {
 
     const hashedRefresh = await bcrypt.hash(refreshToken, 10);
     await this.usersService.updateRefreshToken(admin.id, hashedRefresh);
+
+    // Store tokens in Redis with a TTL of 7 days
+    await this.redisService.set(
+      `auth:${admin.id}:access`,
+      accessToken,
+      60 * 60 * 24 * 7,
+    );
+    await this.redisService.set(
+      `auth:${admin.id}:refresh`,
+      refreshToken,
+      60 * 60 * 24 * 7,
+    );
 
     return { accessToken, refreshToken };
   }

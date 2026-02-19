@@ -1,25 +1,43 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-import { Controller, Post, Body, UseGuards, Req } from '@nestjs/common';
-import { JwtAuthGuard } from '../../../../core/guards/jwt-auth.guard';
-import { Roles } from '../../../../core/decorators/roles.decorators';
-import { OwnerAuthService } from './salonOwner-auth.service';
-import { LoginOwnerDto } from './dto/login-salonOwner.dto';
+import {
+  Controller,
+  Post,
+  Body,
+  Param,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { SalonOwnerAuthService } from './salonOwner-auth.service';
+import { SetOwnerPasswordDto } from './dto/set-owner-password.dto'; // Ensure your DTO is correctly imported
+import { LoginSalonOwnerDto } from './dto/login-salonOwner.dto'; // Ensure your login DTO is correctly imported
+import { LogoutOwnerDto } from './dto/logout-salonOwner.dto';
 
-@Controller('iam/auth/salon-owners')
-export class OwnerAuthController {
-  constructor(private ownerAuthService: OwnerAuthService) {}
+@Controller('iam/admin/salons/owner')
+export class SalonOwnerAuthController {
+  constructor(private readonly salonOwnerAuthService: SalonOwnerAuthService) {}
 
-  @Post('login')
-  login(@Body() dto: LoginOwnerDto) {
-    return this.ownerAuthService.login(dto.email, dto.password);
+  @Post('set-password/:ownerId')
+  async setPassword(
+    @Body() setOwnerPasswordDto: SetOwnerPasswordDto, // DTO to validate password structure
+    @Param('ownerId') ownerId: string,
+  ) {
+    return this.salonOwnerAuthService.setPassword(
+      ownerId,
+      setOwnerPasswordDto.password,
+    );
   }
 
+  @Post('login')
+  async login(@Body() loginDto: LoginSalonOwnerDto) {
+    return this.salonOwnerAuthService.login(loginDto.email, loginDto.password);
+  }
+
+  // Logout endpoint - use LogoutOwnerDto for body validation
   @Post('logout')
-  @UseGuards(JwtAuthGuard)
-  @Roles('SALON_OWNER')
-  logout(@Req() req: any) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const userId = req.user.sub;
-    return this.ownerAuthService.logout(userId);
+  async logout(@Body() logoutOwnerDto: LogoutOwnerDto) {
+    // Ensure that userId is passed in the body
+    if (!logoutOwnerDto || !logoutOwnerDto.userId) {
+      throw new UnauthorizedException('userId is required for logout');
+    }
+
+    return this.salonOwnerAuthService.logout(logoutOwnerDto.userId);
   }
 }
