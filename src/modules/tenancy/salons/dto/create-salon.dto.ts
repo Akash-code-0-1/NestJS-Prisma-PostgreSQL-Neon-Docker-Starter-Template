@@ -29,7 +29,7 @@ export class CreateSalonDto {
   @IsString() @IsNotEmpty() trialPeriod: string;
   @IsString() @IsNotEmpty() initialPlan: string;
 
-  // Optional fields
-  createdBy?: string; // Can be the admin creating the salon
-  updatedBy?: string; // Admin who updates the salon
+  // // Optional fields
+  // createdBy?: string; // Can be the admin creating the salon
+  // updatedBy?: string; // Admin who updates the salon
 }

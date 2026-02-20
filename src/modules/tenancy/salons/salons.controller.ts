@@ -10,6 +10,7 @@ import {
   Delete,
   Query,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { SalonsService } from './salons.service';
 import { CreateSalonDto } from './dto/create-salon.dto';
@@ -19,6 +20,7 @@ import { RolesGuard } from '../../../core/guards/roles.guard';
 import { Roles } from '../../../core/decorators/roles.decorators';
 import { SetOwnerPasswordDto } from '../../iam/auth/salon-owners/dto/set-owner-password.dto';
 import { FilterSalonDto } from './dto/admin-salon-filter.dto';
+import { Request } from 'express';
 
 @Controller('iam/admin/salons')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -27,8 +29,10 @@ export class SalonsController {
 
   @Post('create')
   @Roles('SUPER_ADMIN')
-  create(@Body() dto: CreateSalonDto) {
-    return this.salonsService.create(dto);
+  create(@Body() dto: CreateSalonDto, @Req() req: Request) {
+    const user = req.user as any;
+
+    return this.salonsService.create(dto, user.sub);
   }
 
   // ✅ Updated findAll using FilterSalonDto
@@ -58,14 +62,35 @@ export class SalonsController {
 
   @Patch('update/:id')
   @Roles('SUPER_ADMIN')
-  update(@Param('id') id: string, @Body() dto: UpdateSalonDto) {
-    return this.salonsService.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateSalonDto,
+    @Req() req: Request,
+  ) {
+    const user = req.user as any;
+
+    return this.salonsService.update(id, dto, user.sub, user.role);
   }
 
   @Delete('delete/:id')
   @Roles('SUPER_ADMIN')
   remove(@Param('id') id: string) {
     return this.salonsService.remove(id);
+  }
+
+  // HARD DELETE - DEV ONLY
+  @Delete('hard-delete/:id')
+  @Roles('SUPER_ADMIN')
+  hardDelete(@Param('id') id: string) {
+    // Optionally, you can add a check for NODE_ENV !== 'production'
+    if (process.env.NODE_ENV === 'production') {
+      throw new HttpException(
+        'Hard delete is disabled in production',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    return this.salonsService.hardDelete(id);
   }
 
   // PATCH route for owner to set password

@@ -1,45 +1,25 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { RedisService } from '../../../core/redis/redis.service';
 import { SALON_CACHE_PREFIX } from '../../../core/redis/redis.constants';
 import { AdminSalonFilterDto } from '../salons/dto/admin-salon-filter.dto';
 import { CreateSalonDto } from './dto/create-salon.dto';
-import { HttpException, HttpStatus } from '@nestjs/common';
+
+export enum Role {
+  SUPER_ADMIN = 'SUPER_ADMIN',
+  SALON_OWNER = 'SALON_OWNER',
+  EMPLOYEE = 'EMPLOYEE',
+}
 
 @Injectable()
 export class SalonsService {
-  findOne(id: string) {
-    throw new Error('Method not implemented.');
-  }
-  setOwnerPassword(ownerId: string, password: string) {
-    throw new Error('Method not implemented.');
-  }
-  remove(id: string) {
-    try {
-      // Perform a soft delete by setting the `deletedAt` field
-      const deletedSalon = this.prisma.salon.update({
-        where: { id },
-        data: { deletedAt: new Date() }, // Soft delete by marking the salon as deleted
-      });
-
-      // Clear the cache after deletion
-      this.redisService.flushByPrefix(SALON_CACHE_PREFIX);
-
-      return deletedSalon;
-    } catch (error) {
-      console.error('Error removing salon:', error);
-      throw new HttpException('Failed to delete salon', HttpStatus.BAD_REQUEST);
-    }
-  }
-
   constructor(
     private readonly prisma: PrismaService,
-    private redisService: RedisService,
+    private readonly redisService: RedisService,
   ) {}
 
   private buildCacheKey(filters: AdminSalonFilterDto) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const {
       page = 1,
       limit = 10,
@@ -54,52 +34,54 @@ export class SalonsService {
     return `${SALON_CACHE_PREFIX}:page:${page}:limit:${limit}:s:${search}:st:${status}:p:${plan}:c:${country}:pr:${province}:ct:${city}`;
   }
 
-  // Create a new salon
-  async create(dto: CreateSalonDto) {
+  // ----------------- CREATE -----------------
+  async create(dto: CreateSalonDto, currentUserId: string) {
     try {
-      // Check if a salon with the same vtaNumber or email already exists
       const existingSalon = await this.prisma.salon.findFirst({
-        where: {
-          OR: [{ vtaNumber: dto.vtaNumber }, { email: dto.email }],
-        },
+        where: { OR: [{ vtaNumber: dto.vtaNumber }, { email: dto.email }] },
       });
 
       if (existingSalon) {
         throw new HttpException(
-          `Salon with vtaNumber or email already exists.`,
+          'Salon with vtaNumber or email already exists.',
           HttpStatus.BAD_REQUEST,
         );
       }
 
-      // Create the salon in the database
+      // Calculate trialEndsAt correctly
+      const trialDays = Number(dto.trialPeriod);
+      const trialEndsAt = !isNaN(trialDays)
+        ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000)
+        : null;
+
       const salon = await this.prisma.salon.create({
         data: {
           name: dto.name,
           businessType: dto.businessType,
           vtaNumber: dto.vtaNumber,
-          employeeCount: Number(dto.employeeCount), // Convert to number
+          employeeCount: Number(dto.employeeCount),
           email: dto.email,
           phoneNumber: dto.phoneNumber,
           country: dto.country,
           province: dto.province,
           city: dto.city,
           zipCode: dto.zipCode,
-          status: 'TRIAL', // Default value for status
-          plan: 'BASIC', // Default plan
-          trialEndsAt: dto.trialPeriod ? new Date(dto.trialPeriod) : null,
-          createdBy: dto.createdBy || null, // Admin user creating the salon
-          updatedBy: dto.updatedBy || null, // Admin user updating the salon (optional)
+          status: 'TRIAL',
+          plan: dto.initialPlan || 'BASIC',
+          trialEndsAt,
+          createdBy: currentUserId,
+          updatedBy: currentUserId,
+          lastActiveAt: new Date(),
           owners: {
             create: dto.owners.map((owner) => ({
-              // Ensure the user is created or connected for each owner
               user: {
                 connectOrCreate: {
-                  where: { email: owner.email }, // Check if the user already exists by email
+                  where: { email: owner.email },
                   create: {
                     firstName: owner.firstName,
                     lastName: owner.lastName,
                     email: owner.email,
-                    password: '', // Default or handle password creation if needed
+                    password: '', // password will be set later
                   },
                 },
               },
@@ -109,11 +91,9 @@ export class SalonsService {
         },
       });
 
-      // Clear the cache after creating the salon
       await this.redisService.flushByPrefix(SALON_CACHE_PREFIX);
-
       return salon;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating salon:', error);
       if (error.code === 'P2002') {
         throw new HttpException(
@@ -121,19 +101,112 @@ export class SalonsService {
           HttpStatus.BAD_REQUEST,
         );
       }
-      if (error.code === 'P2014') {
-        throw new HttpException(
-          'Missing required relation: OwnerProfileToUser',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
       throw new HttpException('Failed to create salon', HttpStatus.BAD_REQUEST);
     }
   }
 
-  // Get all salons with filtering and pagination
+  async update(
+    id: string,
+    data: any,
+    currentUserId: string,
+    currentUserRole: Role,
+  ) {
+    try {
+      // Fetch salon with owners included
+      const salon = await this.prisma.salon.findUnique({
+        where: { id },
+        include: { owners: { include: { user: true } } }, // Include related user for each owner
+      });
+
+      if (!salon) {
+        throw new HttpException('Salon not found', HttpStatus.NOT_FOUND);
+      }
+
+      // Ensure that the current user is authorized to update the salon
+      const isOwner = salon.owners?.some(
+        (owner) => owner.userId === currentUserId,
+      );
+
+      if (!(isOwner || currentUserRole === Role.SUPER_ADMIN)) {
+        throw new HttpException(
+          'You do not have permission to update this salon',
+          HttpStatus.FORBIDDEN,
+        );
+      }
+
+      // Handle trialPeriod if provided
+      let trialEndsAt = salon.trialEndsAt;
+      if (data.trialPeriod) {
+        const trialDays = Number(data.trialPeriod);
+        trialEndsAt = !isNaN(trialDays)
+          ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000)
+          : salon.trialEndsAt;
+      }
+
+      // Separate existing owners and new owners
+      const existingOwners = data.owners?.filter((o: any) => o.id) || [];
+      const newOwners = data.owners?.filter((o: any) => !o.id) || [];
+
+      const updated = await this.prisma.salon.update({
+        where: { id },
+        data: {
+          name: data.name,
+          businessType: data.businessType,
+          vtaNumber: data.vtaNumber,
+          employeeCount: Number(data.employeeCount),
+          email: data.email,
+          phoneNumber: data.phoneNumber,
+          country: data.country,
+          province: data.province,
+          city: data.city,
+          zipCode: data.zipCode,
+          plan: data.initialPlan || salon.plan,
+          trialEndsAt,
+          updatedBy: currentUserId,
+          owners: {
+            update: existingOwners.map((owner: any) => ({
+              where: { id: owner.id }, // Using actual OwnerProfile id
+              data: {
+                invitationSent: owner.invitationSent,
+                user: {
+                  update: {
+                    firstName: owner.firstName,
+                    lastName: owner.lastName,
+                  },
+                },
+              },
+            })),
+            create: newOwners.map((owner: any) => ({
+              user: {
+                connectOrCreate: {
+                  where: { email: owner.email },
+                  create: {
+                    firstName: owner.firstName,
+                    lastName: owner.lastName,
+                    email: owner.email,
+                    password: '', // Password will be set later
+                  },
+                },
+              },
+              invitationSent: owner.invitationSent,
+              // No salonId needed — Prisma will link it automatically
+            })),
+          },
+        },
+      });
+
+      // Clear cache after update
+      await this.redisService.flushByPrefix(SALON_CACHE_PREFIX);
+
+      return updated;
+    } catch (error: any) {
+      console.error('Error updating salon:', error);
+      throw new HttpException('Failed to update salon', HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  // ----------------- FIND ALL -----------------
   async findAll(filters: AdminSalonFilterDto) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const {
       page = 1,
       limit = 10,
@@ -154,17 +227,8 @@ export class SalonsService {
     }
 
     const cacheKey = this.buildCacheKey(filters);
-
-    // 🔥 CHECK CACHE FIRST
     const cached = await this.redisService.get(cacheKey);
-
-    if (cached) {
-      console.log('CACHE HIT');
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-      return JSON.parse(cached);
-    }
-
-    console.log('DB HIT');
+    if (cached) return JSON.parse(cached);
 
     const where: any = { deletedAt: null };
 
@@ -175,26 +239,14 @@ export class SalonsService {
         { vtaNumber: { contains: search, mode: 'insensitive' } },
       ];
     }
-
-    if (status && status !== 'ALL') {
-      where.status = status.toUpperCase();
-    }
-
-    if (plan && plan !== 'ALL') {
-      where.plan = plan.toUpperCase();
-    }
-
-    if (country && country !== 'ALL') {
+    if (status && status !== 'ALL') where.status = status.toUpperCase();
+    if (plan && plan !== 'ALL') where.plan = plan.toUpperCase();
+    if (country && country !== 'ALL')
       where.country = { equals: country, mode: 'insensitive' };
-    }
-
-    if (province && province !== 'ALL') {
+    if (province && province !== 'ALL')
       where.province = { equals: province, mode: 'insensitive' };
-    }
-
-    if (city && city !== 'ALL') {
+    if (city && city !== 'ALL')
       where.city = { equals: city, mode: 'insensitive' };
-    }
 
     const [total, salons] = await this.prisma.$transaction([
       this.prisma.salon.count({ where }),
@@ -216,45 +268,55 @@ export class SalonsService {
       },
     };
 
-    // 🔥 SAVE TO CACHE (60 seconds TTL)
     await this.redisService.set(cacheKey, JSON.stringify(response), 60);
-
     return response;
   }
 
-  // Update an existing salon
-  async update(id: string, data: any) {
-    try {
-      const updated = await this.prisma.salon.update({
-        where: { id },
-        data,
-      });
-
-      // Clear the cache after updating the salon
-      await this.redisService.flushByPrefix(SALON_CACHE_PREFIX);
-
-      return updated;
-    } catch (error) {
-      console.error('Error updating salon:', error);
-      throw new HttpException('Failed to update salon', HttpStatus.BAD_REQUEST);
-    }
-  }
-
-  // Soft delete a salon
+  // ----------------- SOFT DELETE -----------------
   async softDelete(id: string) {
     try {
       const deleted = await this.prisma.salon.update({
         where: { id },
         data: { deletedAt: new Date() },
       });
-
-      // Clear the cache after soft deleting the salon
       await this.redisService.flushByPrefix(SALON_CACHE_PREFIX);
-
       return deleted;
     } catch (error) {
       console.error('Error soft deleting salon:', error);
       throw new HttpException('Failed to delete salon', HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  // ----------------- FIND ONE -----------------
+  async findOne(id: string) {
+    const salon = await this.prisma.salon.findUnique({
+      where: { id },
+      include: { owners: true },
+    });
+    if (!salon)
+      throw new HttpException('Salon not found', HttpStatus.NOT_FOUND);
+    return salon;
+  }
+
+  // ----------------- REMOVE (alias for softDelete) -----------------
+  async remove(id: string) {
+    return this.softDelete(id);
+  }
+
+  // ----------------- HARD DELETE (DEV ONLY) -----------------
+  async hardDelete(id: string) {
+    try {
+      const deleted = await this.prisma.salon.delete({
+        where: { id },
+      });
+      await this.redisService.flushByPrefix(SALON_CACHE_PREFIX);
+      return deleted;
+    } catch (error) {
+      console.error('Error hard deleting salon:', error);
+      throw new HttpException(
+        'Failed to hard delete salon',
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 }
