@@ -124,6 +124,7 @@ model Salon {
   @@index([country, province])
 }
 
+
 // -----------------
 // Multi-Tenant Bridge: User ↔ Salon
 // -----------------

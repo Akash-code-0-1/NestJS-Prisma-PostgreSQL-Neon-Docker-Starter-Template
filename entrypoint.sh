@@ -14,4 +14,3 @@ npx prisma migrate deploy || echo "No migrations to apply"
 
 echo "🚀 Starting app..."
 exec "$@"
-
