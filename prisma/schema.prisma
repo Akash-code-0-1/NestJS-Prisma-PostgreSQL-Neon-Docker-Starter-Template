@@ -6,7 +6,6 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
 // -----------------
 // Platform Admin
 // -----------------
@@ -115,6 +114,7 @@ model Salon {
 
   salonUsers    SalonUser[]
 
+
   @@index([status])
   @@index([plan])
   @@index([country])
@@ -187,3 +187,411 @@ model AccountantProfile {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
+
+
+// generator client {
+//   provider = "prisma-client-js"
+// }
+
+// datasource db {
+//   provider = "postgresql"
+//   url      = env("DATABASE_URL")
+// }
+
+// //////////////////////////////////////////////////////
+// // ENUMS
+// //////////////////////////////////////////////////////
+
+// enum UserRole {
+//   SUPER_ADMIN
+//   OWNER
+//   EMPLOYEE
+//   ACCOUNTANT
+// }
+
+// enum SalonStatus {
+//   ACTIVE
+//   INACTIVE
+//   SUSPENDED
+// }
+
+// enum PlanType {
+//   FREE
+//   BASIC
+//   PREMIUM
+//   ENTERPRISE
+// }
+
+// enum TicketStatus {
+//   OPEN
+//   IN_PROGRESS
+//   CLOSED
+// }
+
+// enum EmployeeStatusType {
+//   ACTIVE
+//   INACTIVE
+//   TERMINATED
+// }
+
+// //////////////////////////////////////////////////////
+// // PLATFORM LEVEL
+// //////////////////////////////////////////////////////
+
+// model Admin {
+//   id           String   @id @default(uuid())
+//   name         String
+//   email        String   @unique
+//   password     String
+//   refreshToken String?
+//   createdAt    DateTime @default(now())
+//   updatedAt    DateTime @updatedAt
+// }
+
+// model User {
+//   id            String   @id @default(uuid())
+//   firstName     String
+//   lastName      String
+//   email         String   @unique
+//   password      String
+//   refreshToken  String?
+//   isActive      Boolean  @default(true)
+//   role          UserRole?
+//   createdAt     DateTime @default(now())
+//   updatedAt     DateTime @updatedAt
+
+//   ownerProfiles       OwnerProfile[]
+//   employeeProfiles    EmployeeProfile[]
+//   accountantProfiles  AccountantProfile[]
+//   salonUsers          SalonUser[]
+//   salonMembers        SalonMember[]
+//   activityLogs        ActivityLog[]
+//   createdTickets      Ticket[] @relation("CreatedTickets")
+//   assignedTickets     Ticket[] @relation("AssignedTickets")
+
+//   remunerations       SalonEmployeeRemuneration[]
+//   analytics           SalonEmployeeAnalytics[]
+//   employeeStatus      SalonEmployeeStatus?
+// }
+
+// //////////////////////////////////////////////////////
+// // PROFILE TABLES
+// //////////////////////////////////////////////////////
+
+// model OwnerProfile {
+//   id             String   @id @default(uuid())
+//   userId         String
+//   salonId        String
+//   invitationSent Boolean  @default(false)
+//   deletedAt      DateTime?
+
+//   user   User   @relation(fields: [userId], references: [id])
+//   salon  Salon  @relation(fields: [salonId], references: [id])
+// }
+
+// model EmployeeProfile {
+//   id         String   @id @default(uuid())
+//   userId     String
+//   salonId    String
+//   salary     Float
+//   designation String
+//   deletedAt  DateTime?
+//   createdAt  DateTime @default(now())
+//   updatedAt  DateTime @updatedAt
+
+//   user   User  @relation(fields: [userId], references: [id])
+//   salon  Salon @relation(fields: [salonId], references: [id])
+// }
+
+// model AccountantProfile {
+//   id            String   @id @default(uuid())
+//   userId        String
+//   salonId       String
+//   licenseNumber String
+//   deletedAt     DateTime?
+//   createdAt     DateTime @default(now())
+//   updatedAt     DateTime @updatedAt
+
+//   user   User  @relation(fields: [userId], references: [id])
+//   salon  Salon @relation(fields: [salonId], references: [id])
+// }
+
+// //////////////////////////////////////////////////////
+// // MULTI-TENANT BRIDGE
+// //////////////////////////////////////////////////////
+
+// model SalonUser {
+//   id      String @id @default(uuid())
+//   userId  String
+//   salonId String
+//   role    UserRole
+
+//   user   User  @relation(fields: [userId], references: [id])
+//   salon  Salon @relation(fields: [salonId], references: [id])
+
+//   @@unique([userId, salonId])
+// }
+
+// //////////////////////////////////////////////////////
+// // SALON (TENANT CORE)
+// //////////////////////////////////////////////////////
+
+// model Salon {
+//   id             String   @id @default(uuid())
+//   name           String
+//   businessType   String
+//   vtaNumber      String   @unique
+//   employeeCount  Int
+//   email          String   @unique
+//   phoneNumber    String
+//   country        String
+//   province       String
+//   city           String
+//   zipCode        String
+//   status         SalonStatus
+//   plan           PlanType
+//   trialEndsAt    DateTime?
+//   revenue Decimal? @db.Decimal(12,2)
+//   ltv     Decimal? @db.Decimal(12,2)
+//   supportCount   Int      @default(0)
+//   lastActiveAt   DateTime?
+//   createdAt      DateTime @default(now())
+//   updatedAt      DateTime @updatedAt
+//   deletedAt      DateTime?
+//   createdBy      String?
+//   updatedBy      String?
+
+//   // 🔹 ADD THESE (Missing Relations Fix)
+//   ownerProfiles      OwnerProfile[]
+//   employeeProfiles   EmployeeProfile[]
+//   accountantProfiles AccountantProfile[]
+
+//   salonUsers          SalonUser[]
+//   subscriptions       Subscription[]
+//   sales               Sale[]
+//   leads               Lead[]
+//   activityLogs        ActivityLog[]
+//   alerts              Alert[]
+//   tickets             Ticket[]
+
+//   locations           SalonLocation[]
+//   contacts            SalonContact[]
+//   members             SalonMember[]
+//   billings            SalonBilling[]
+//   salonLogs           SalonActivityLog[]
+//   supportTickets      SalonSupportTicket[]
+//   emails              SalonEmailCommunication[]
+
+//   remunerations       SalonEmployeeRemuneration[]
+//   analytics           SalonEmployeeAnalytics[]
+//   employeeStatuses    SalonEmployeeStatus[]
+// }
+
+// //////////////////////////////////////////////////////
+// // CORE BUSINESS
+// //////////////////////////////////////////////////////
+
+// model Subscription {
+//   id        String   @id @default(uuid())
+//   salonId   String
+//   planType  PlanType
+//   startDate DateTime
+//   endDate   DateTime
+//   status    String
+//   price     Float
+//   createdAt DateTime @default(now())
+
+//   salon Salon @relation(fields: [salonId], references: [id])
+//   sales Sale[]
+// }
+
+// model Sale {
+//   id             String   @id @default(uuid())
+//   salonId        String
+//   subscriptionId String?
+//   amount         Float
+//   saleDate       DateTime
+//   createdAt      DateTime @default(now())
+
+//   salon        Salon        @relation(fields: [salonId], references: [id])
+//   subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+// }
+
+// model Lead {
+//   id        String   @id @default(uuid())
+//   salonId   String
+//   leadSource String
+//   status     String
+//   createdAt  DateTime @default(now())
+
+//   salon Salon @relation(fields: [salonId], references: [id])
+// }
+
+// model ActivityLog {
+//   id          String   @id @default(uuid())
+//   salonId     String
+//   userId      String
+//   activityType String
+//   description String
+//   timestamp   DateTime @default(now())
+
+//   salon Salon @relation(fields: [salonId], references: [id])
+//   user  User  @relation(fields: [userId], references: [id])
+// }
+
+// model Alert {
+//   id          String   @id @default(uuid())
+//   salonId     String
+//   type        String
+//   severity    String
+//   description String
+//   status      String
+//   createdAt   DateTime @default(now())
+//   updatedAt   DateTime @updatedAt
+
+//   salon Salon @relation(fields: [salonId], references: [id])
+// }
+
+// model Ticket {
+//   id             String   @id @default(uuid())
+//   salonId        String
+//   userId         String
+//   assignedUserId String?
+//   issueDescription String
+//   status         TicketStatus
+//   createdAt      DateTime @default(now())
+//   updatedAt      DateTime @updatedAt
+
+//   salon   Salon @relation(fields: [salonId], references: [id])
+//   creator User  @relation("CreatedTickets", fields: [userId], references: [id])
+//   assignee User? @relation("AssignedTickets", fields: [assignedUserId], references: [id])
+// }
+
+// //////////////////////////////////////////////////////
+// // SALON MODULE TABLES
+// //////////////////////////////////////////////////////
+
+// model SalonLocation {
+//   id       String @id @default(uuid())
+//   salonId  String
+//   address  String
+//   city     String
+//   province String
+//   zipCode  String
+//   type     String
+
+//   salon Salon @relation(fields: [salonId], references: [id])
+// }
+
+// model SalonContact {
+//   id      String @id @default(uuid())
+//   salonId String
+//   email   String
+//   phone   String
+//   website String?
+
+//   salon Salon @relation(fields: [salonId], references: [id])
+// }
+
+// model SalonMember {
+//   id                  String @id @default(uuid())
+//   salonId             String
+//   userId              String
+//   role                UserRole
+//   ownershipPercentage Float?
+//   status              String
+
+//   salon Salon @relation(fields: [salonId], references: [id])
+//   user  User  @relation(fields: [userId], references: [id])
+// }
+
+// model SalonBilling {
+//   id            String   @id @default(uuid())
+//   salonId       String
+//   plan          PlanType
+//   amount        Float
+//   paymentMethod String
+//   status        String
+//   paymentDate   DateTime
+
+//   salon Salon @relation(fields: [salonId], references: [id])
+// }
+
+// model SalonActivityLog {
+//   id         String   @id @default(uuid())
+//   salonId    String
+//   action     String
+//   performedBy String
+//   timestamp  DateTime @default(now())
+
+//   salon Salon @relation(fields: [salonId], references: [id])
+// }
+
+// model SalonSupportTicket {
+//   id         String   @id @default(uuid())
+//   salonId    String
+//   priority   String
+//   status     String
+//   category   String
+//   assignedTo String?
+//   createdAt  DateTime @default(now())
+
+//   salon Salon @relation(fields: [salonId], references: [id])
+// }
+
+// model SalonEmailCommunication {
+//   id      String   @id @default(uuid())
+//   salonId String
+//   subject String
+//   sentAt  DateTime
+//   status  String
+
+//   salon Salon @relation(fields: [salonId], references: [id])
+// }
+
+// //////////////////////////////////////////////////////
+// // EMPLOYEE MANAGEMENT
+// //////////////////////////////////////////////////////
+
+// model SalonEmployeeRemuneration {
+//   id           String   @id @default(uuid())
+//   salonId      String
+//   userId       String
+//   salary       Float
+//   bonus        Float
+//   totalPayment Float
+//   createdAt    DateTime @default(now())
+
+//   salon Salon @relation(fields: [salonId], references: [id])
+//   user  User  @relation(fields: [userId], references: [id])
+// }
+
+// model SalonEmployeeAnalytics {
+//   id                    String   @id @default(uuid())
+//   salonId               String
+//   userId                String
+//   completedAppointments Int
+//   bookedAppointments    Int
+//   topServices           String
+//   createdAt             DateTime @default(now())
+//   updatedAt             DateTime @updatedAt
+
+//   salon Salon @relation(fields: [salonId], references: [id])
+//   user  User  @relation(fields: [userId], references: [id])
+// }
+
+// model SalonEmployeeStatus {
+//   id              String   @id @default(uuid())
+//   salonId         String
+//   userId          String
+//   status          EmployeeStatusType
+//   terminationReason String?
+//   terminationDate  DateTime?
+//   createdAt        DateTime @default(now())
+//   updatedAt        DateTime @updatedAt
+
+//   salon Salon @relation(fields: [salonId], references: [id])
+//   user  User  @relation(fields: [userId], references: [id])
+
+//   @@unique([userId])
+// }

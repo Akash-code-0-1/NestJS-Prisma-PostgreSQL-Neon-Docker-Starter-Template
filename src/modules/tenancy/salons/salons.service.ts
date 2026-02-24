@@ -69,9 +69,9 @@ export class SalonsService {
           status: 'TRIAL',
           plan: dto.initialPlan || 'BASIC',
           trialEndsAt,
-          createdBy: currentUserId,
-          updatedBy: currentUserId,
-          lastActiveAt: new Date(),
+          createdBy: currentUserId, // Admin who created the salon
+          updatedBy: currentUserId, // Admin who created the salon (initially the same)
+          lastActiveAt: new Date(), // The salon's first active date
           owners: {
             create: dto.owners.map((owner) => ({
               user: {
@@ -91,7 +91,9 @@ export class SalonsService {
         },
       });
 
+      // Clear cache related to the salon
       await this.redisService.flushByPrefix(SALON_CACHE_PREFIX);
+
       return salon;
     } catch (error: any) {
       console.error('Error creating salon:', error);
