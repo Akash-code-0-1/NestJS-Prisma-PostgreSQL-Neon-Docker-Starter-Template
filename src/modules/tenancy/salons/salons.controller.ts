@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import {
   Controller,
@@ -12,6 +10,8 @@ import {
   Query,
   UseGuards,
   Req,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { SalonsService } from './salons.service';
 import { CreateSalonDto } from './dto/create-salon.dto';
@@ -22,12 +22,15 @@ import { Roles } from '../../../core/decorators/roles.decorators';
 import { SetOwnerPasswordDto } from '../../iam/auth/salon-owners/dto/set-owner-password.dto';
 import { FilterSalonDto } from './dto/admin-salon-filter.dto';
 import type { Request } from 'express';
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { SalonOwnerAuthService } from '../../iam/auth/salon-owners/salonOwner-auth.service'; // Import the SalonOwnerAuthService
 
 @Controller('iam/admin/salons')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class SalonsController {
-  constructor(private readonly salonsService: SalonsService) {}
+  constructor(
+    private readonly salonsService: SalonsService,
+    private readonly salonOwnerAuthService: SalonOwnerAuthService, // Inject the SalonOwnerAuthService
+  ) {}
 
   @Post('create')
   @Roles('SUPER_ADMIN')
@@ -98,11 +101,21 @@ export class SalonsController {
 
   // PATCH route for owner to set password
   @Patch('owner/:ownerId/set-password')
-  setOwnerPassword(
+  async setOwnerPassword(
     @Param('ownerId') ownerId: string,
     @Body() dto: SetOwnerPasswordDto,
   ) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    return this.salonsService.setOwnerPassword(ownerId, dto.password);
+    try {
+      // Call setPassword from SalonOwnerAuthService to set the password
+      return await this.salonOwnerAuthService.setPassword(
+        ownerId,
+        dto.password,
+      );
+    } catch (error) {
+      throw new HttpException(
+        error.message,
+        error.status || HttpStatus.BAD_REQUEST,
+      );
+    }
   }
 }
