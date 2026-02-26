@@ -1,11 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-base-to-string */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import type { Request } from 'express'; // <-- type-only import
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { RedisService } from '../../../core/redis/redis.service';
 import { SALON_CACHE_PREFIX } from '../../../core/redis/redis.constants';
-import { AdminSalonFilterDto } from '../salons/dto/admin-salon-filter.dto';
+import { FilterSalonDto } from '../salons/dto/admin-salon-filter.dto';
 import { CreateSalonDto } from './dto/create-salon.dto';
 
 export enum Role {
@@ -21,7 +20,7 @@ export class SalonsService {
     private readonly redisService: RedisService,
   ) {}
 
-  private buildCacheKey(filters: AdminSalonFilterDto) {
+  private buildCacheKey(filters: FilterSalonDto) {
     const {
       page = 1,
       limit = 10,
@@ -50,6 +49,7 @@ export class SalonsService {
         );
       }
 
+      // Calculate trialEndsAt correctly
       const trialDays = Number(dto.trialPeriod);
       const trialEndsAt = !isNaN(trialDays)
         ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000)
@@ -70,9 +70,9 @@ export class SalonsService {
           status: 'TRIAL',
           plan: dto.initialPlan || 'BASIC',
           trialEndsAt,
-          createdBy: currentUserId,
-          updatedBy: currentUserId,
-          lastActiveAt: new Date(),
+          createdBy: currentUserId, // Admin who created the salon
+          updatedBy: currentUserId, // Admin who created the salon (initially the same)
+          lastActiveAt: new Date(), // The salon's first active date
           owners: {
             create: dto.owners.map((owner) => ({
               user: {
@@ -82,7 +82,7 @@ export class SalonsService {
                     firstName: owner.firstName,
                     lastName: owner.lastName,
                     email: owner.email,
-                    password: '', // Will be set later
+                    password: '', // password will be set later
                   },
                 },
               },
@@ -92,13 +92,15 @@ export class SalonsService {
         },
       });
 
+      // Clear cache related to the salon
       await this.redisService.flushByPrefix(SALON_CACHE_PREFIX);
+
       return salon;
     } catch (error: any) {
       console.error('Error creating salon:', error);
       if (error.code === 'P2002') {
         throw new HttpException(
-          `The vtaNumber or email must be unique. ${error.meta?.target} already exists.`,
+          `The vtaNumber or email must be unique. ${error.meta.target} already exists.`,
           HttpStatus.BAD_REQUEST,
         );
       }
@@ -106,7 +108,6 @@ export class SalonsService {
     }
   }
 
-  // ----------------- UPDATE -----------------
   async update(
     id: string,
     data: any,
@@ -114,15 +115,17 @@ export class SalonsService {
     currentUserRole: Role,
   ) {
     try {
+      // Fetch salon with owners included
       const salon = await this.prisma.salon.findUnique({
         where: { id },
-        include: { owners: { include: { user: true } } },
+        include: { owners: { include: { user: true } } }, // Include related user for each owner
       });
 
       if (!salon) {
         throw new HttpException('Salon not found', HttpStatus.NOT_FOUND);
       }
 
+      // Ensure that the current user is authorized to update the salon
       const isOwner = salon.owners?.some(
         (owner) => owner.userId === currentUserId,
       );
@@ -134,25 +137,38 @@ export class SalonsService {
         );
       }
 
-      const trialDays = data.trialPeriod ? Number(data.trialPeriod) : null;
-      const trialEndsAt = trialDays
-        ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000)
-        : salon.trialEndsAt;
+      // Handle trialPeriod if provided
+      let trialEndsAt = salon.trialEndsAt;
+      if (data.trialPeriod) {
+        const trialDays = Number(data.trialPeriod);
+        trialEndsAt = !isNaN(trialDays)
+          ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000)
+          : salon.trialEndsAt;
+      }
 
+      // Separate existing owners and new owners
       const existingOwners = data.owners?.filter((o: any) => o.id) || [];
       const newOwners = data.owners?.filter((o: any) => !o.id) || [];
 
       const updated = await this.prisma.salon.update({
         where: { id },
         data: {
-          ...data,
+          name: data.name,
+          businessType: data.businessType,
+          vtaNumber: data.vtaNumber,
           employeeCount: Number(data.employeeCount),
+          email: data.email,
+          phoneNumber: data.phoneNumber,
+          country: data.country,
+          province: data.province,
+          city: data.city,
+          zipCode: data.zipCode,
           plan: data.initialPlan || salon.plan,
           trialEndsAt,
           updatedBy: currentUserId,
           owners: {
             update: existingOwners.map((owner: any) => ({
-              where: { id: owner.id },
+              where: { id: owner.id }, // Using actual OwnerProfile id
               data: {
                 invitationSent: owner.invitationSent,
                 user: {
@@ -171,17 +187,20 @@ export class SalonsService {
                     firstName: owner.firstName,
                     lastName: owner.lastName,
                     email: owner.email,
-                    password: '',
+                    password: '', // Password will be set later
                   },
                 },
               },
               invitationSent: owner.invitationSent,
+              // No salonId needed — Prisma will link it automatically
             })),
           },
         },
       });
 
+      // Clear cache after update
       await this.redisService.flushByPrefix(SALON_CACHE_PREFIX);
+
       return updated;
     } catch (error: any) {
       console.error('Error updating salon:', error);
@@ -190,7 +209,7 @@ export class SalonsService {
   }
 
   // ----------------- FIND ALL -----------------
-  async findAll(filters: AdminSalonFilterDto) {
+  async findAll(filters: FilterSalonDto) {
     const {
       page = 1,
       limit = 10,
@@ -202,6 +221,7 @@ export class SalonsService {
       city,
       refresh,
     } = filters;
+
     const safeLimit = Math.min(Number(limit), 100);
     const skip = (Number(page) - 1) * safeLimit;
 
@@ -211,9 +231,11 @@ export class SalonsService {
 
     const cacheKey = this.buildCacheKey(filters);
     const cached = await this.redisService.get(cacheKey);
-    if (cached) return JSON.parse(cached);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    if (cached) return JSON.parse(cached.toString());
 
     const where: any = { deletedAt: null };
+
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
@@ -249,6 +271,7 @@ export class SalonsService {
         lastPage: Math.ceil(total / safeLimit),
       },
     };
+
     await this.redisService.set(cacheKey, JSON.stringify(response), 60);
     return response;
   }
@@ -268,6 +291,7 @@ export class SalonsService {
     }
   }
 
+  // ----------------- FIND ONE -----------------
   async findOne(id: string) {
     const salon = await this.prisma.salon.findUnique({
       where: { id },
@@ -278,13 +302,17 @@ export class SalonsService {
     return salon;
   }
 
+  // ----------------- REMOVE (alias for softDelete) -----------------
   async remove(id: string) {
     return this.softDelete(id);
   }
 
+  // ----------------- HARD DELETE (DEV ONLY) -----------------
   async hardDelete(id: string) {
     try {
-      const deleted = await this.prisma.salon.delete({ where: { id } });
+      const deleted = await this.prisma.salon.delete({
+        where: { id },
+      });
       await this.redisService.flushByPrefix(SALON_CACHE_PREFIX);
       return deleted;
     } catch (error) {

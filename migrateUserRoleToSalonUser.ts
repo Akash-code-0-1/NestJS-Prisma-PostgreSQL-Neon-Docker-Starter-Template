@@ -1,4 +1,5 @@
-import { PrismaClient, Role } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+import { Role } from './src/modules/tenancy/salons/salons.service';
 const prisma = new PrismaClient();
 
 async function main() {

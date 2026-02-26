@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import {
@@ -20,7 +21,8 @@ import { RolesGuard } from '../../../core/guards/roles.guard';
 import { Roles } from '../../../core/decorators/roles.decorators';
 import { SetOwnerPasswordDto } from '../../iam/auth/salon-owners/dto/set-owner-password.dto';
 import { FilterSalonDto } from './dto/admin-salon-filter.dto';
-import { Request } from 'express';
+import type { Request } from 'express';
+import { HttpException, HttpStatus } from '@nestjs/common';
 
 @Controller('iam/admin/salons')
 @UseGuards(JwtAuthGuard, RolesGuard)
