@@ -6,6 +6,7 @@ import { RedisService } from '../../../core/redis/redis.service';
 import { SALON_CACHE_PREFIX } from '../../../core/redis/redis.constants';
 import { FilterSalonDto } from '../salons/dto/admin-salon-filter.dto';
 import { CreateSalonDto } from './dto/create-salon.dto';
+// import { SetOwnerPasswordDto } from '../../iam/auth/salon-owners/dto/set-owner-password.dto';
 
 export enum Role {
   SUPER_ADMIN = 'SUPER_ADMIN',
@@ -323,4 +324,29 @@ export class SalonsService {
       );
     }
   }
+
+  // // Implementing setOwnerPassword
+  // async setOwnerPassword(ownerId: string, password: string) {
+  //   // Find the salon owner using ownerId
+  //   const owner = await this.prisma.salonOwner.findUnique({
+  //     where: { id: ownerId },
+  //     include: { user: true }, // Assuming there's a user associated with the salon owner
+  //   });
+
+  //   if (!owner) {
+  //     throw new Error('Owner not found');
+  //   }
+
+  //   const hashedPassword = await bcrypt.hash(password, 10);
+
+  //   // Update the password of the associated user
+  //   await this.prisma.user.update({
+  //     where: { id: owner.user.id },
+  //     data: { password: hashedPassword },
+  //   });
+
+  //   return { message: 'Password set successfully' };
+  // }
+
+
 }

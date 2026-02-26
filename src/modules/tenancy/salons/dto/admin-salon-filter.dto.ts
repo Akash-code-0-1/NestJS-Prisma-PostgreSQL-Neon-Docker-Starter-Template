@@ -3,11 +3,11 @@ import { IsOptional, IsString, IsNumberString } from 'class-validator';
 export class FilterSalonDto {
   @IsOptional()
   @IsNumberString()
-  page?: number;
+  page?: number; // Change from string to number
 
   @IsOptional()
   @IsNumberString()
-  limit?: number;
+  limit?: number; // Change from string to number
 
   @IsOptional()
   @IsString()
@@ -35,27 +35,27 @@ export class FilterSalonDto {
 
   @IsOptional()
   @IsNumberString()
-  minEmployees?: string;
+  minEmployees?: number; // Change from string to number
 
   @IsOptional()
   @IsNumberString()
-  maxEmployees?: string;
+  maxEmployees?: number; // Change from string to number
 
   @IsOptional()
   @IsNumberString()
-  minRevenue?: string;
+  minRevenue?: number; // Change from string to number
 
   @IsOptional()
   @IsNumberString()
-  maxRevenue?: string;
+  maxRevenue?: number; // Change from string to number
 
   @IsOptional()
   @IsNumberString()
-  minSupport?: string;
+  minSupport?: number; // Change from string to number
 
   @IsOptional()
   @IsNumberString()
-  maxSupport?: string;
+  maxSupport?: number; // Change from string to number
 
   @IsOptional()
   @IsNumberString()
