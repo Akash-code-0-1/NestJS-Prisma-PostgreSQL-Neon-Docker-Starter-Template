@@ -54,6 +54,7 @@ export class SalonsController {
       maxSupport: query.maxSupport ? Number(query.maxSupport) : undefined,
     };
 
+    // Call the service with the updated filters
     return this.salonsService.findAll(filters);
   }
 

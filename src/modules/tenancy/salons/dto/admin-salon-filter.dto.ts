@@ -3,11 +3,11 @@ import { IsOptional, IsString, IsNumberString } from 'class-validator';
 export class FilterSalonDto {
   @IsOptional()
   @IsNumberString()
-  page?: string;
+  page?: number;
 
   @IsOptional()
   @IsNumberString()
-  limit?: string;
+  limit?: number;
 
   @IsOptional()
   @IsString()
@@ -56,4 +56,8 @@ export class FilterSalonDto {
   @IsOptional()
   @IsNumberString()
   maxSupport?: string;
+
+  @IsOptional()
+  @IsNumberString()
+  refresh?: string;
 }
