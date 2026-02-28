@@ -49,6 +49,7 @@ model User {
   @@index([email])
 }
 
+
 // -----------------
 // Role Enum (Platform / Tenant roles)
 // -----------------
