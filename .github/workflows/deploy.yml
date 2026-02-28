@@ -29,5 +29,5 @@ jobs:
       - name: Deploy Docker containers
         run: |
           cd ~/app                     # <-- path on your Ubuntu PC where docker-compose.prod.yml is
-          docker compose -f docker-compose.prod.yml pull
-          docker compose -f docker-compose.prod.yml up -d
+          docker-compose -f docker-compose.prod.yml pull
+          docker-compose -f docker-compose.prod.yml up -d
