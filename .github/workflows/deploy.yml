@@ -7,27 +7,40 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: self-hosted   # <-- use your self-hosted runner
+    runs-on: self-hosted  # your self-hosted runner
     steps:
-      # Checkout the repository
+      # 1️⃣ Checkout repository
       - uses: actions/checkout@v4
 
-      # Login to Docker Hub
+      # 2️⃣ Login to Docker Hub
       - name: Login to Docker Hub
         run: |
           echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
 
-      # Build Docker image
+      # 3️⃣ Build Docker image
       - name: Build Docker image
-        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/domenico-backend:latest .
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/domenico-backend:latest . || exit 1
 
-      # Push Docker image to Docker Hub
+      # 4️⃣ Push Docker image to Docker Hub
       - name: Push Docker image
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/domenico-backend:latest
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/domenico-backend:latest || exit 1
 
-      # Deploy locally on the runner
+      # 5️⃣ Deploy Docker containers locally
       - name: Deploy Docker containers
         run: |
-          cd ~/app                     # <-- path on your Ubuntu PC where docker-compose.prod.yml is
-          docker-compose -f docker-compose.prod.yml pull
-          docker-compose -f docker-compose.prod.yml up -d --remove-orphans --force-recreate
+          cd ~/app || exit 1   # <-- path on your Ubuntu PC where docker-compose.prod.yml is
+
+          # Stop and remove old containers to avoid name conflicts
+          docker rm -f domenico-backend || true
+          docker rm -f app-redis-1 || true
+
+          # Alternatively, stop everything from this compose file (safer)
+          # docker-compose -f docker-compose.prod.yml down
+
+          # Pull latest images
+          docker-compose -f docker-compose.prod.yml pull || exit 1
+
+          # Start containers fresh
+          docker-compose -f docker-compose.prod.yml up -d --remove-orphans || exit 1
