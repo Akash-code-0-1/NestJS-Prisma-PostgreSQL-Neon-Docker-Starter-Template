@@ -291,7 +291,7 @@ export class SalonsService {
       throw new HttpException('Failed to delete salon', HttpStatus.BAD_REQUEST);
     }
   }
-
+  
   // ----------------- FIND ONE -----------------
   async findOne(id: string) {
     const salon = await this.prisma.salon.findUnique({

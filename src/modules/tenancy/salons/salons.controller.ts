@@ -39,7 +39,6 @@ export class SalonsController {
     return this.salonsService.create(dto, user.sub);
   }
 
-  // ✅ Updated findAll using FilterSalonDto
   @Get()
   @Roles('SUPER_ADMIN')
   findAll(@Query() query: FilterSalonDto) {
