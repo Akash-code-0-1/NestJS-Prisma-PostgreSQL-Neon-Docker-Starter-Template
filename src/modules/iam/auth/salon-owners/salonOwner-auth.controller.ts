@@ -6,8 +6,8 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { SalonOwnerAuthService } from './salonOwner-auth.service';
-import { SetOwnerPasswordDto } from './dto/set-owner-password.dto'; // Ensure your DTO is correctly imported
-import { LoginSalonOwnerDto } from './dto/login-salonOwner.dto'; // Ensure your login DTO is correctly imported
+import { SetOwnerPasswordDto } from './dto/set-owner-password.dto';
+import { LoginSalonOwnerDto } from './dto/login-salonOwner.dto';
 import { LogoutOwnerDto } from './dto/logout-salonOwner.dto';
 
 @Controller('iam/admin/salons/owner')
@@ -16,7 +16,7 @@ export class SalonOwnerAuthController {
 
   @Post('set-password/:ownerId')
   async setPassword(
-    @Body() setOwnerPasswordDto: SetOwnerPasswordDto, // DTO to validate password structure
+    @Body() setOwnerPasswordDto: SetOwnerPasswordDto,
     @Param('ownerId') ownerId: string,
   ) {
     return this.salonOwnerAuthService.setPassword(

@@ -6,9 +6,7 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-// -----------------
 // Platform Admin
-// -----------------
 model Admin {
   id           String   @id @default(uuid())
   name         String
@@ -24,10 +22,7 @@ model Admin {
   @@index([createdAt])
   @@index([name, createdAt])
 }
-
-// -----------------
 // Users (Global Identity)
-// -----------------
 model User {
   id           String   @id @default(uuid())
   firstName    String
@@ -35,24 +30,21 @@ model User {
   email        String   @unique
   password     String?
   refreshToken String?
-  isActive     Boolean  @default(false)   // Account active or not
-  role         Role?    // KEEP TEMPORARILY FOR SAFE MIGRATION
+  isActive     Boolean  @default(false)
+  role         Role?    
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   // Relationships
   salonUsers        SalonUser[]
-  ownerProfile      OwnerProfile?    // Reference to OwnerProfile
+  ownerProfile      OwnerProfile?    
   employeeProfile   EmployeeProfile?
   accountantProfile AccountantProfile?
 
   @@index([email])
 }
 
-
-// -----------------
 // Role Enum (Platform / Tenant roles)
-// -----------------
 enum Role {
   SUPER_ADMIN
   SALON_OWNER
@@ -60,9 +52,7 @@ enum Role {
   ACCOUNTANT
 }
 
-// -----------------
 // Salon (Tenant)
-// -----------------
 enum SalonStatus {
   ACTIVE
   TRIAL
@@ -107,7 +97,7 @@ model Salon {
   updatedBy     String?
 
   // Relation to owners (OwnerProfile)
-  owners        OwnerProfile[]  // Relation to OwnerProfile
+  owners        OwnerProfile[]
 
   // Reverse relations for EmployeeProfile and AccountantProfile
   employeeProfiles EmployeeProfile[]
@@ -125,15 +115,12 @@ model Salon {
   @@index([country, province])
 }
 
-
-// -----------------
 // Multi-Tenant Bridge: User ↔ Salon
-// -----------------
 model SalonUser {
   id       String @id @default(uuid())
   userId   String
   salonId  String
-  role     Role?   // Tenant-scoped role
+  role     Role? 
 
   user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   salon    Salon  @relation(fields: [salonId], references: [id], onDelete: Cascade)

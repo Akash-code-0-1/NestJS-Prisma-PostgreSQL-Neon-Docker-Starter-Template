@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-base-to-string */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
@@ -119,7 +120,7 @@ export class SalonsService {
       // Fetch salon with owners included
       const salon = await this.prisma.salon.findUnique({
         where: { id },
-        include: { owners: { include: { user: true } } }, // Include related user for each owner
+        include: { owners: { include: { user: true } } },
       });
 
       if (!salon) {
@@ -169,7 +170,7 @@ export class SalonsService {
           updatedBy: currentUserId,
           owners: {
             update: existingOwners.map((owner: any) => ({
-              where: { id: owner.id }, // Using actual OwnerProfile id
+              where: { id: owner.id },
               data: {
                 invitationSent: owner.invitationSent,
                 user: {
@@ -188,12 +189,11 @@ export class SalonsService {
                     firstName: owner.firstName,
                     lastName: owner.lastName,
                     email: owner.email,
-                    password: '', // Password will be set later
+                    password: '',
                   },
                 },
               },
               invitationSent: owner.invitationSent,
-              // No salonId needed — Prisma will link it automatically
             })),
           },
         },

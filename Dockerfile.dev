@@ -1,31 +1,12 @@
-# Dockerfile.dev
 FROM node:20-alpine
-
-# Install build tools for bcrypt/native modules
 RUN apk add --no-cache python3 make g++ bash
-
-# Set working directory
 WORKDIR /app
-
-# Copy package.json and package-lock.json first
 COPY package*.json ./
-
-# Install dependencies
 RUN npm install
-
-# Install dev tools globally
 RUN npm install -g ts-node-dev @nestjs/cli
-
-# Copy the app
 COPY . .
-
-# Expose port
 EXPOSE 3000
-
-# Entry point for Prisma generate/migrations
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
-
-# Dev command
 CMD ["npm", "run", "start:dev"]

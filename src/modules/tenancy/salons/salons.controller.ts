@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import {
   Controller,
   Post,
@@ -88,7 +87,6 @@ export class SalonsController {
   @Delete('hard-delete/:id')
   @Roles('SUPER_ADMIN')
   hardDelete(@Param('id') id: string) {
-    // Optionally, you can add a check for NODE_ENV !== 'production'
     if (process.env.NODE_ENV === 'production') {
       throw new HttpException(
         'Hard delete is disabled in production',

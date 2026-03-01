@@ -57,7 +57,7 @@ export class UsersService {
     }
 
     const [total, users] = await this.prisma.$transaction([
-      this.prisma.admin.count({ where }), // Get the total count of users
+      this.prisma.admin.count({ where }),
       this.prisma.admin.findMany({
         where,
         skip,

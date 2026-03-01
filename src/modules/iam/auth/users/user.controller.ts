@@ -20,7 +20,6 @@ export class UsersController {
     return this.usersService.findAll(Number(page) || 1,Number(limit) || 10,search);
   }
   // Admin-only: create a user
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPER_ADMIN')

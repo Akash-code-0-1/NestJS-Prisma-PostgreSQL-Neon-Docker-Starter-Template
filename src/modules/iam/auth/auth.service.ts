@@ -9,7 +9,7 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
-    private readonly redisService: RedisService, // Inject RedisService
+    private readonly redisService: RedisService,
   ) {}
 
   async register(dto: any) {
@@ -63,7 +63,6 @@ export class AuthService {
     const hashedRefresh = await bcrypt.hash(refreshToken, 10);
     await this.usersService.updateRefreshToken(admin.id, hashedRefresh);
 
-    // Store tokens in Redis with a TTL of 7 days
     await this.redisService.set(
       `auth:${admin.id}:access`,
       accessToken,

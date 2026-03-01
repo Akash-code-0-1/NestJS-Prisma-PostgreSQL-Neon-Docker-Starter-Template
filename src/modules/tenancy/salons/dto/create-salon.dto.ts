@@ -6,7 +6,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { OwnerDto } from '../../../../modules/iam/auth/salon-owners/dto/owner.dto'; // Import OwnerDto
+import { OwnerDto } from '../../../../modules/iam/auth/salon-owners/dto/owner.dto';
 
 export class CreateSalonDto {
   @IsString() @IsNotEmpty() name: string;

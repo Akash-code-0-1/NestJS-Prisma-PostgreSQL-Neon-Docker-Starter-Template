@@ -7,14 +7,14 @@ import { PrismaService } from '../../../../core/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { RedisService } from '../../../../core/redis/redis.service';
-import { SetOwnerPasswordDto } from './dto/set-owner-password.dto'; // Ensure your DTO is correctly imported
+import { SetOwnerPasswordDto } from './dto/set-owner-password.dto';
 
 @Injectable()
 export class SalonOwnerAuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
-    private readonly redisService: RedisService, // Inject RedisService
+    private readonly redisService: RedisService,
   ) {}
 
   // Set password for Salon Owner
@@ -23,7 +23,7 @@ export class SalonOwnerAuthService {
     const ownerProfile = await this.prisma.ownerProfile.findUnique({
       where: { id: ownerId },
       include: {
-        user: true, // Include the associated User model
+        user: true,
       },
     });
 
@@ -37,22 +37,22 @@ export class SalonOwnerAuthService {
       throw new NotFoundException('User associated with Salon Owner not found');
     }
 
-    // Step 2: Hash the new password
+    //Hash the new password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Step 3: Ensure the role is set (if not already set)
-    const role = user.role || 'SALON_OWNER'; // Default to 'SALON_OWNER' if role is null
+    //Ensure the role is set (if not already set)
+    const role = user.role || 'SALON_OWNER';
 
-    // Step 4: Update the user's password and role in the database
+    //Update the user's password and role in the database
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
         password: hashedPassword,
-        role, // Set the role to 'SALON_OWNER' if it's missing
+        role,
       },
     });
 
-    // Step 5: Create JWT access and refresh tokens
+    //Create JWT access and refresh tokens
     const payload = { sub: user.id, email: user.email, role: user.role };
     const accessToken = this.jwtService.sign(payload, {
       secret: process.env.JWT_ACCESS_SECRET,
@@ -63,31 +63,31 @@ export class SalonOwnerAuthService {
       expiresIn: '7d',
     });
 
-    // Step 6: Store the refresh token in the database (and also in Redis for session management)
+    //Store the refresh token in the database (and also in Redis for session management)
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { refreshToken }, // Save the refresh token in the database
+      data: { refreshToken }, // Saved the refresh token in the database
     });
 
-    // Step 7: Store tokens in Redis for session management (Optional)
+    //Store tokens in Redis for session management
     await this.redisService.set(
       `auth:${user.id}:access`,
       accessToken,
       60 * 60 * 24 * 7,
-    ); // 7 days TTL
+    );
     await this.redisService.set(
       `auth:${user.id}:refresh`,
       refreshToken,
       60 * 60 * 24 * 7,
-    ); // 7 days TTL
+    );
 
-    // Step 8: Optionally, update the invitationSent flag for the owner
+    //Optionally, update the invitationSent flag for the owner
     await this.prisma.ownerProfile.update({
       where: { id: ownerId },
       data: { invitationSent: true },
     });
 
-    // Step 9: Return the tokens in the response
+    //Return the tokens in the response
     return {
       message: 'Password set successfully',
       accessToken,
@@ -138,22 +138,22 @@ export class SalonOwnerAuthService {
       expiresIn: '7d',
     });
 
-    // Step 1: Update refreshToken in database (if necessary)
+    //Update refreshToken in database (if necessary)
     await this.prisma.user.update({
       where: { id: salonOwner.id },
       data: { refreshToken }, // Save the refresh token in the database
     });
 
-    // Step 2: Store tokens in Redis for session management
+    //Store tokens in Redis for session management
     await this.redisService.set(
       `auth:${salonOwner.id}:access`,
       accessToken,
-      60 * 60 * 24 * 7, // 7 days TTL
+      60 * 60 * 24 * 7,
     );
     await this.redisService.set(
       `auth:${salonOwner.id}:refresh`,
       refreshToken,
-      60 * 60 * 24 * 7, // 7 days TTL
+      60 * 60 * 24 * 7,
     );
 
     return {
@@ -196,7 +196,7 @@ export class SalonOwnerAuthService {
     await this.redisService.set(
       `auth:${ownerId}:access`,
       accessToken,
-      60 * 60 * 24 * 7, // 7 days TTL
+      60 * 60 * 24 * 7,
     );
 
     return {
