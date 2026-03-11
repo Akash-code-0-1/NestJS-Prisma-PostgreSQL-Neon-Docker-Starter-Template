@@ -12,20 +12,20 @@ import { SalonOwnerAuthService } from './salonOwner-auth.service';
 import { SetOwnerPasswordDto } from './dto/set-owner-password.dto';
 import { LoginSalonOwnerDto } from './dto/login-salonOwner.dto';
 // import { LogoutOwnerDto } from './dto/logout-salonOwner.dto';
-import { CreateSalonOwnerDto } from './dto/create-salon-owner.dto';
+// import { CreateSalonOwnerDto } from './dto/create-salon-owner.dto';
 import { JwtAuthGuard } from 'src/core/guards/jwt-auth.guard';
 
 @Controller('iam/admin/salon  s/owner')
 export class SalonOwnerAuthController {
   constructor(private readonly salonOwnerAuthService: SalonOwnerAuthService) {}
 
-  @Post('signup/:salonId')
-  async signup(
-    @Body() dto: CreateSalonOwnerDto,
-    @Param('salonId') salonId: string,
-  ) {
-    return this.salonOwnerAuthService.signup(dto, salonId);
-  }
+  // @Post('signup/:salonId')
+  // async signup(
+  //   @Body() dto: CreateSalonOwnerDto,
+  //   @Param('salonId') salonId: string,
+  // ) {
+  //   return this.salonOwnerAuthService.signup(dto, salonId);
+  // }
 
   @Post('set-password/:ownerId')
   async setPassword(

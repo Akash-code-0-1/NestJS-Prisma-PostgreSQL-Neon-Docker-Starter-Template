@@ -1,16 +1,16 @@
-import { IsEmail, IsString, MinLength } from 'class-validator';
+// import { IsEmail, IsString, MinLength } from 'class-validator';
 
-export class CreateSalonOwnerDto {
-  @IsString()
-  fullName: string;
+// export class CreateSalonOwnerDto {
+//   @IsString()
+//   fullName: string;
 
-  @IsEmail()
-  email: string;
+//   @IsEmail()
+//   email: string;
 
-  @IsString()
-  @MinLength(6)
-  password: string;
+//   @IsString()
+//   @MinLength(6)
+//   password: string;
 
-  @IsString()
-  confirmPassword: string;
-}
+//   @IsString()
+//   confirmPassword: string;
+// }
