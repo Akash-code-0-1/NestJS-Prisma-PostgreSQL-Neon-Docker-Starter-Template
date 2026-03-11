@@ -128,7 +128,6 @@ export class SalonOwnerAuthService {
     //Hash the new password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    //Ensure the role is set (if not already set)
     const role = user.role || 'SALON_OWNER';
 
     //Update the user's password and role in the database

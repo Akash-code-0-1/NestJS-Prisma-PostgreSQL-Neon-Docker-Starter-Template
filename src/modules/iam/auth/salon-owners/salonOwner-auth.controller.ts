@@ -43,7 +43,7 @@ export class SalonOwnerAuthController {
     return this.salonOwnerAuthService.login(loginDto.email, loginDto.password);
   }
 
-  // Logout endpoint - use LogoutOwnerDto for body validation
+  // Logout endpoint
   @Post('logout')
   @UseGuards(JwtAuthGuard)
   logout(@Req() req) {
