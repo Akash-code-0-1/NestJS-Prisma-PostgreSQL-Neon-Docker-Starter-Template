@@ -1,7 +1,7 @@
 services:
   api:
     build:
-      context: /home/tanvir/tanvir_works/project/domenico-backend
+      context: .
       dockerfile: Dockerfile.dev
     depends_on:
       redis:

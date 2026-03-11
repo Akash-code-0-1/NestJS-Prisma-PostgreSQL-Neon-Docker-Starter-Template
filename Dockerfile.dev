@@ -1,11 +1,16 @@
 FROM node:20-alpine
+
 RUN apk add --no-cache python3 make g++ bash
 WORKDIR /app
+
 COPY package*.json ./
 RUN npm install
 RUN npm install -g ts-node-dev @nestjs/cli
+
 COPY . .
+
 EXPOSE 3000
+
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
