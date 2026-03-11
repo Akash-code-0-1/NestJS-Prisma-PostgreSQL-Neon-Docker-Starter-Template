@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { RedisService } from '../../../../core/redis/redis.service';
 import { SetOwnerPasswordDto } from './dto/set-owner-password.dto';
+import { CreateSalonOwnerDto } from './dto/create-salon-owner.dto';
 
 @Injectable()
 export class SalonOwnerAuthService {
@@ -16,6 +17,93 @@ export class SalonOwnerAuthService {
     private jwtService: JwtService,
     private readonly redisService: RedisService,
   ) {}
+
+  // Salon owner Signup to SalonOwner Portal
+  async signup(dto: CreateSalonOwnerDto, salonId: string) {
+    const { fullName, email, password, confirmPassword } = dto;
+
+    if (password !== confirmPassword) {
+      throw new UnauthorizedException('Passwords do not match');
+    }
+
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      throw new UnauthorizedException('Email already registered');
+    }
+
+    const [firstName, ...rest] = fullName.split(' ');
+    const lastName = rest.join(' ') || '';
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await this.prisma.user.create({
+      data: {
+        firstName,
+        lastName,
+        email,
+        password: hashedPassword,
+        role: 'SALON_OWNER',
+        isActive: true,
+      },
+    });
+
+    await this.prisma.ownerProfile.create({
+      data: {
+        userId: user.id,
+        salonId,
+      },
+    });
+
+    await this.prisma.salonUser.create({
+      data: {
+        userId: user.id,
+        salonId,
+        role: 'SALON_OWNER',
+      },
+    });
+
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    };
+
+    const accessToken = this.jwtService.sign(payload, {
+      secret: process.env.JWT_ACCESS_SECRET,
+      expiresIn: '7d',
+    });
+
+    const refreshToken = this.jwtService.sign(payload, {
+      secret: process.env.JWT_REFRESH_SECRET,
+      expiresIn: '7d',
+    });
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken },
+    });
+
+    await this.redisService.set(
+      `auth:${user.id}:access`,
+      accessToken,
+      60 * 60 * 24 * 7,
+    );
+
+    await this.redisService.set(
+      `auth:${user.id}:refresh`,
+      refreshToken,
+      60 * 60 * 24 * 7,
+    );
+
+    return {
+      message: 'Account created successfully',
+      accessToken,
+      refreshToken,
+    };
+  }
 
   // Set password for Salon Owner
   async setPassword(ownerId: string, password: string) {
