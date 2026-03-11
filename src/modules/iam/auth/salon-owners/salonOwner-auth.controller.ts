@@ -4,12 +4,15 @@ import {
   Body,
   Param,
   UnauthorizedException,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
 import { SalonOwnerAuthService } from './salonOwner-auth.service';
 import { SetOwnerPasswordDto } from './dto/set-owner-password.dto';
 import { LoginSalonOwnerDto } from './dto/login-salonOwner.dto';
 import { LogoutOwnerDto } from './dto/logout-salonOwner.dto';
 import { CreateSalonOwnerDto } from './dto/create-salon-owner.dto';
+import { JwtAuthGuard } from 'src/core/guards/jwt-auth.guard';
 
 @Controller('iam/admin/salons/owner')
 export class SalonOwnerAuthController {
@@ -39,14 +42,20 @@ export class SalonOwnerAuthController {
     return this.salonOwnerAuthService.login(loginDto.email, loginDto.password);
   }
 
-  // Logout endpoint - use LogoutOwnerDto for body validation
-  @Post('logout')
-  async logout(@Body() logoutOwnerDto: LogoutOwnerDto) {
-    // Ensure that userId is passed in the body
-    if (!logoutOwnerDto || !logoutOwnerDto.userId) {
-      throw new UnauthorizedException('userId is required for logout');
-    }
+  // // Logout endpoint - use LogoutOwnerDto for body validation
+  // @Post('logout')
+  // async logout(@Body() logoutOwnerDto: LogoutOwnerDto) {
+  //   // Ensure that userId is passed in the body
+  //   if (!logoutOwnerDto || !logoutOwnerDto.userId) {
+  //     throw new UnauthorizedException('userId is required for logout');
+  //   }
 
-    return this.salonOwnerAuthService.logout(logoutOwnerDto.userId);
+  //   return this.salonOwnerAuthService.logout(logoutOwnerDto.userId);
+  // }
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  logout(@Req() req) {
+    return this.salonOwnerAuthService.logout(req.user.sub);
   }
 }
