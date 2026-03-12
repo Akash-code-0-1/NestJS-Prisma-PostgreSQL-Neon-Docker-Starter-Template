@@ -1,23 +1,26 @@
+version: "3.9"
+
 services:
+  # Local dev + Docker dev
   api:
     build:
       context: .
       dockerfile: Dockerfile.dev
-    depends_on:
-      redis:
-        condition: service_started
-        required: true
+    container_name: domenico-backend
     environment:
-      DATABASE_URL: postgresql://neondb_owner:npg_Ndom9Oczn8MB@ep-shiny-rain-aiv0dkzc-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+      DATABASE_URL: ${DATABASE_URL}
       NODE_ENV: development
       REDIS_HOST: redis
       REDIS_PORT: "6379"
     ports:
-      - "3001:3000"
-    restart: always
+      - "3003:3000"  # Docker container port mapped to host
     volumes:
-      - .:/app:cached
+      - .:/app:cached   # for hot reload inside container
+    depends_on:
+      - redis
+    restart: always
 
+  # Redis service
   redis:
     image: redis:latest
     ports:

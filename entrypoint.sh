@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-# Load environment variables from .env file
+# Load env variables
 if [ -f .env ]; then
   export $(grep -v '^#' .env | xargs)
 fi
@@ -14,6 +14,6 @@ npx prisma generate
 echo "⏳ Applying migrations (if any)..."
 npx prisma migrate deploy || echo "No migrations to apply"
 
-# Start the application
+# Start the app
 echo "🚀 Starting app..."
-exec "$@"  # This runs the CMD defined in Dockerfile (node dist/main.js)
+exec "$@"  # runs CMD from Dockerfile (npm run start:dev or node dist/main.js)

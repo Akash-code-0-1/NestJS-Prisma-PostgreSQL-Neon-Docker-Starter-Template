@@ -1,18 +1,25 @@
 FROM node:20-alpine
 
+# Install build tools
 RUN apk add --no-cache python3 make g++ bash
+
 WORKDIR /app
 
+# Copy package files and install deps
 COPY package*.json ./
 RUN npm install
 RUN npm install -g ts-node-dev @nestjs/cli
 
+# Copy source code
 COPY . .
 
+# Expose NestJS default port
 EXPOSE 3000
 
+# Copy entrypoint script
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+# Start dev server with hot reload
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["npm", "run", "start:dev"]
