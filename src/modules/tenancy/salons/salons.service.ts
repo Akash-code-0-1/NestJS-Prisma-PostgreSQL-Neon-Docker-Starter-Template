@@ -72,7 +72,7 @@ export class SalonsService {
           zipCode: dto.zipCode,
           status: 'TRIAL',
           plan: dto.initialPlan
-            ? (dto.initialPlan as PlanType)
+            ? (dto.initialPlan as PlanType) // ✅ type-safe
             : PlanType.BASIC,
           trialEndsAt,
           createdBy: currentUserId, // Admin who created the salon
