@@ -17,6 +17,7 @@ services:
     restart: always
     volumes:
       - .:/app:cached
+    command: npm run start:dev
 
   redis:
     image: redis:latest
