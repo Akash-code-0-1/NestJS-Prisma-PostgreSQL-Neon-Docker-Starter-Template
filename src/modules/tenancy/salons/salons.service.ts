@@ -147,9 +147,6 @@ export class SalonsService {
           ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000)
           : salon.trialEndsAt;
       }
-
-      
-
       // Separate existing owners and new owners
       const existingOwners = data.owners?.filter((o: any) => o.id) || [];
       const newOwners = data.owners?.filter((o: any) => !o.id) || [];

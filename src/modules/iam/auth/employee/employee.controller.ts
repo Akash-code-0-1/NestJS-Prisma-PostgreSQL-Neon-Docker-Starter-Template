@@ -1,54 +1,96 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Controller, Post, Body, Param, UseGuards, Req } from '@nestjs/common';
-
 import { EmployeeService } from './employee.service';
 import { JwtAuthGuard } from '../../../../core/guards/jwt-auth.guard';
-
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { SetEmployeePasswordDto } from './dto/set-employee-password.dto';
 import { LoginEmployeeDto } from './dto/login-employee.dto';
 
-@Controller('iam/salon/employees')
+@Controller('/iam/auth/salon/employee')
 export class EmployeeController {
   constructor(private readonly employeeService: EmployeeService) {}
 
-  @UseGuards(JwtAuthGuard)
   @Post('create/:salonId')
-  createEmployee(
+  async createEmployee(
     @Param('salonId') salonId: string,
     @Body() dto: CreateEmployeeDto,
   ) {
-    return this.employeeService.createEmployee(salonId, dto);
+    try {
+      return await this.employeeService.createEmployee(salonId, dto);
+    } catch (err: any) {
+      console.error('Error creating employee:', err);
+      return {
+        message: err.message || 'Failed to create employee',
+        stack: err.stack,
+        error: err.name || 'Error',
+      };
+    }
   }
 
   @Post('set-password/:employeeId')
-  setPassword(
+  async setPassword(
     @Param('employeeId') employeeId: string,
     @Body() dto: SetEmployeePasswordDto,
   ) {
-    return this.employeeService.setPassword(employeeId, dto);
+    try {
+      return await this.employeeService.setPassword(employeeId, dto);
+    } catch (err: any) {
+      console.error('Error setting password:', err);
+      return {
+        message: err.message || 'Failed to set password',
+        stack: err.stack,
+        error: err.name || 'Error',
+      };
+    }
   }
 
   @Post('login')
-  login(@Body() dto: LoginEmployeeDto) {
-    return this.employeeService.login(dto.email, dto.password);
+  async login(@Body() dto: LoginEmployeeDto) {
+    try {
+      return await this.employeeService.login(dto.email, dto.password);
+    } catch (err: any) {
+      console.error('Error logging in:', err);
+      return {
+        message: err.message || 'Login failed',
+        stack: err.stack,
+        error: err.name || 'Error',
+      };
+    }
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('logout')
-  logout(@Req() req: any) {
-    const employeeId = req.user?.id ?? req.user?.sub;
-
-    return this.employeeService.logout(employeeId);
+  async logout(@Req() req: any) {
+    try {
+      const employeeId = req.user?.id ?? req.user?.sub;
+      return await this.employeeService.logout(employeeId);
+    } catch (err: any) {
+      console.error('Error logging out:', err);
+      return {
+        message: err.message || 'Logout failed',
+        stack: err.stack,
+        error: err.name || 'Error',
+      };
+    }
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('reset-password/:employeeId')
-  resetPassword(
+  async resetPassword(
     @Param('employeeId') employeeId: string,
     @Body() body: { newPassword: string },
   ) {
-    return this.employeeService.resetPassword(employeeId, body.newPassword);
+    try {
+      return await this.employeeService.resetPassword(
+        employeeId,
+        body.newPassword,
+      );
+    } catch (err: any) {
+      console.error('Error resetting password:', err);
+      return {
+        message: err.message || 'Reset password failed',
+        stack: err.stack,
+        error: err.name || 'Error',
+      };
+    }
   }
 }
