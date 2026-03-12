@@ -148,6 +148,8 @@ export class SalonsService {
           : salon.trialEndsAt;
       }
 
+      
+
       // Separate existing owners and new owners
       const existingOwners = data.owners?.filter((o: any) => o.id) || [];
       const newOwners = data.owners?.filter((o: any) => !o.id) || [];
