@@ -12,6 +12,7 @@ import { SetOwnerPasswordDto } from './dto/set-owner-password.dto';
 import { LoginSalonOwnerDto } from './dto/login-salonOwner.dto';
 import { LogoutOwnerDto } from './dto/logout-salonOwner.dto';
 import { CreateSalonOwnerDto } from './dto/create-salon-owner.dto';
+import { JwtAuthGuard } from '../../../../core/guards/jwt-auth.guard';
 
 @Controller('iam/admin/salons/owner')
 export class SalonOwnerAuthController {
@@ -41,20 +42,17 @@ export class SalonOwnerAuthController {
     return this.salonOwnerAuthService.login(loginDto.email, loginDto.password);
   }
 
-  // Logout endpoint - use LogoutOwnerDto for body validation
+  @UseGuards(JwtAuthGuard)
   @Post('logout')
-  async logout(@Body() logoutOwnerDto: LogoutOwnerDto) {
-    // Ensure that userId is passed in the body
-    if (!logoutOwnerDto || !logoutOwnerDto.userId) {
-      throw new UnauthorizedException('userId is required for logout');
+  async logout(@Req() req: any) {
+    // Extract userId from JWT payload, try both 'id' and 'sub'
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const userId = req.user?.id ?? req.user?.sub;
+
+    if (!userId) {
+      throw new UnauthorizedException('Invalid token: no user ID found');
     }
 
-    return this.salonOwnerAuthService.logout(logoutOwnerDto.userId);
+    return this.salonOwnerAuthService.logout(userId);
   }
-
-  // @Post('logout')
-  // @UseGuards(JwtAuthGuard)
-  // logout(@Req() req) {
-  //   return this.salonOwnerAuthService.logout(req.user.sub);
-  // }
 }

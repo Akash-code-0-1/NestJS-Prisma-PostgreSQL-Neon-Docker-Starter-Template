@@ -147,17 +147,49 @@ model OwnerProfile {
   salon          Salon   @relation(fields: [salonId], references: [id], onDelete: Cascade) // Reverse relation to Salon
 }
 
+// model EmployeeProfile {
+//   id          String  @id @default(uuid())
+//   userId      String  @unique
+//   user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   salary      Decimal? @db.Decimal(10,2)
+//   designation String?
+//   deletedAt   DateTime?
+
+//   salonId     String  // The Salon ID this EmployeeProfile belongs to
+//   salon       Salon   @relation(fields: [salonId], references: [id], onDelete: Cascade)  // Reverse relation to Salon
+
+//   createdAt   DateTime @default(now())
+//   updatedAt   DateTime @updatedAt
+// }
+
+
 model EmployeeProfile {
-  id          String  @id @default(uuid())
-  userId      String  @unique
-  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  salary      Decimal? @db.Decimal(10,2)
-  designation String?
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  salonId     String
+  salon       Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+
+  salary            Decimal  @db.Decimal(10,2)
+  designation       String
+  dob               String
+  address           String
+  city              String
+  province          String
+  cap               String
+  emcName           String?
+  emcNumber         String?
+  contractType      String
+  taxIdCode         String
+  iban              String?
+  startDate         DateTime
+  endDate           DateTime
+  remunerationType  String
+
+  invitationStatus  Boolean  @default(true)
+
   deletedAt   DateTime?
-
-  salonId     String  // The Salon ID this EmployeeProfile belongs to
-  salon       Salon   @relation(fields: [salonId], references: [id], onDelete: Cascade)  // Reverse relation to Salon
-
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
