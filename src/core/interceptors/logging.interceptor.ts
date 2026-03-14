@@ -4,21 +4,28 @@ import {
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
-import { Observable } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { Observable, tap } from 'rxjs';
+import type { Request } from 'express';
+import { WinstonLogger } from '../logger/winston.logger';
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const req = context.switchToHttp().getRequest();
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    const httpContext = context.switchToHttp();
+    const req = httpContext.getRequest<Request>();
 
-    const { method, url } = req;
-    const start = Date.now();
+    const method = req.method;
+    const url = req.url;
+    const requestId = req.requestId ?? 'unknown-request-id';
+    const startTime = Date.now();
 
     return next.handle().pipe(
       tap(() => {
-        const ms = Date.now() - start;
-        console.log(`${method} ${url} ${ms}ms`);
+        const duration = Date.now() - startTime;
+        WinstonLogger.log(
+          `[${requestId}] ${method} ${url} - ${duration}ms`,
+          'HTTP',
+        );
       }),
     );
   }

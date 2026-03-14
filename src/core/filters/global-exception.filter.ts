@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   ExceptionFilter,
   Catch,
@@ -7,20 +5,18 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
-
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    let status: number = HttpStatus.INTERNAL_SERVER_ERROR;
-    let message: any = 'Internal server error';
-    let error: string = 'InternalServerError';
+    let status = HttpStatus.INTERNAL_SERVER_ERROR;
+    let message: string | string[] = 'Internal server error';
+    let error = 'InternalServerError';
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
@@ -29,15 +25,29 @@ export class AllExceptionsFilter implements ExceptionFilter {
       if (typeof res === 'string') {
         message = res;
         error = exception.name;
-      } else if (typeof res === 'object') {
-        message = (res as any).message || exception.message;
-        error = (res as any).error || exception.name;
+      } else if (typeof res === 'object' && res !== null) {
+        // Safely access properties
+        const resObj = res as Record<string, unknown>;
+        if ('message' in resObj && typeof resObj.message === 'string') {
+          message = resObj.message;
+        } else if ('message' in resObj && Array.isArray(resObj.message)) {
+          message = resObj.message;
+        } else {
+          message = exception.message;
+        }
+
+        if ('error' in resObj && typeof resObj.error === 'string') {
+          error = resObj.error;
+        } else {
+          error = exception.name;
+        }
       }
     } else if (exception instanceof Error) {
       message = exception.message;
       error = exception.name;
     }
 
+    // Log the full exception safely
     console.error('Exception caught:', exception);
 
     response.status(status).json({
@@ -49,7 +59,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       message,
       error,
 
-      requestId: request['requestId'] || null,
+      requestId: request['requestId'] ?? null,
 
       ...(process.env.NODE_ENV !== 'production' && {
         stack: exception instanceof Error ? exception.stack : undefined,

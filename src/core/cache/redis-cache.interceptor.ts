@@ -1,39 +1,59 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
 import {
   CallHandler,
   ExecutionContext,
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
-
-import { Observable, of } from 'rxjs';
-import { tap } from 'rxjs/operators';
-
+import { Observable, tap } from 'rxjs';
 import { RedisService } from '../redis/redis.service';
+import type { Request } from 'express';
 
 @Injectable()
 export class RedisCacheInterceptor implements NestInterceptor {
   constructor(private readonly redis: RedisService) {}
 
-  async intercept(
-    context: ExecutionContext,
-    next: CallHandler,
-  ): Promise<Observable<any>> {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const req = context.switchToHttp().getRequest();
-
+  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+    const req = context.switchToHttp().getRequest<Request>();
     const key = `cache:${req.url}`;
 
-    const cached = await this.redis.get(key);
-
-    if (cached) {
-      return of(JSON.parse(cached));
-    }
-
-    return next.handle().pipe(
-      tap(async (data) => {
-        await this.redis.set(key, JSON.stringify(data), 60);
-      }),
-    );
+    return new Observable((subscriber) => {
+      // Explicitly tell TS that cached is string | null
+      this.redis
+        .get(key)
+        .then((cached: string | null) => {
+          if (cached) {
+            // Safe JSON.parse because cached is string
+            subscriber.next(JSON.parse(cached));
+            subscriber.complete();
+          } else {
+            next
+              .handle()
+              .pipe(
+                tap((data) => {
+                  // Fire-and-forget async call (don't await in tap)
+                  this.redis
+                    .set(key, JSON.stringify(data), 60)
+                    .catch((err: unknown) => {
+                      console.error('Redis set error:', err);
+                    });
+                }),
+              )
+              .subscribe({
+                next: (data) => subscriber.next(data),
+                error: (err) => subscriber.error(err),
+                complete: () => subscriber.complete(),
+              });
+          }
+        })
+        .catch((err: unknown) => {
+          console.error('Redis get error:', err);
+          // fallback: continue without cache
+          next.handle().subscribe({
+            next: (data) => subscriber.next(data),
+            error: (err) => subscriber.error(err),
+            complete: () => subscriber.complete(),
+          });
+        });
+    });
   }
 }
