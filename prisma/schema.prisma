@@ -105,6 +105,7 @@ model Salon {
   accountantProfiles AccountantProfile[]
 
   salonUsers    SalonUser[]
+  services      Service[] 
 
 
   @@index([status])
@@ -130,6 +131,43 @@ model SalonUser {
   salon Salon @relation(fields: [salonId], references: [id])
 
   @@unique([userId, salonId])
+}
+
+model Service {
+  id           String   @id @default(uuid())
+  salonId      String
+  salon        Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+
+  serviceName  String
+  categories   String[]
+
+  duration     Int
+  postBreakMin Int
+
+  price        Decimal  @db.Decimal(10,2)
+  vat          Decimal  @db.Decimal(5,2)
+
+  description  String?
+  icon         String?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  employees    ServiceEmployee[]
+
+  @@index([salonId])
+}
+
+model ServiceEmployee {
+  id         String @id @default(uuid())
+
+  serviceId  String
+  employeeId String
+
+  service    Service         @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceId, employeeId])
 }
 
 
@@ -177,6 +215,8 @@ model EmployeeProfile {
   deletedAt   DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  services ServiceEmployee[]
 }
 
 model AccountantProfile {

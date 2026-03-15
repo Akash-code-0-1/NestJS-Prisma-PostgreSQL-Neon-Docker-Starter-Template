@@ -9,6 +9,7 @@ import { HealthModule } from './health/health.module';
 import { OwnerAuthModule } from './modules/iam/auth/salon-owners/salonOwner-auth.module';
 import { EmployeeAuthModule } from './modules/iam/auth/employee/employee.module';
 import { ClientAuthModule } from './modules/iam/auth/client/client-auth.module';
+import { ServicesModule } from './modules/tenancy/salons/services/services.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { ClientAuthModule } from './modules/iam/auth/client/client-auth.module';
     OwnerAuthModule,
     EmployeeAuthModule,
     ClientAuthModule,
+    ServicesModule,
   ],
 })
 export class AppModule {}
