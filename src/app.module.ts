@@ -10,6 +10,7 @@ import { OwnerAuthModule } from './modules/iam/auth/salon-owners/salonOwner-auth
 import { EmployeeAuthModule } from './modules/iam/auth/employee/employee.module';
 import { ClientAuthModule } from './modules/iam/auth/client/client-auth.module';
 import { ServicesModule } from './modules/tenancy/salons/services/services.module';
+import { TestimonialModule } from './modules/tenancy/salons/testimonials/testimonial.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { ServicesModule } from './modules/tenancy/salons/services/services.modul
     EmployeeAuthModule,
     ClientAuthModule,
     ServicesModule,
+    TestimonialModule,
   ],
 })
 export class AppModule {}

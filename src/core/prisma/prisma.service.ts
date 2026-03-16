@@ -23,6 +23,7 @@ import { PrismaClient } from '@prisma/client';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
+  // testimonial: any;
   // ✅ Removed "service: any;" — this was overwriting Prisma's model
 
   async onModuleInit() {
