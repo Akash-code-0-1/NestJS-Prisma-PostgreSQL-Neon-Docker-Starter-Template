@@ -50,7 +50,9 @@ export class EmployeeManagementService {
     const limitNumber = Number(limit);
 
     const cacheKey = `emp:${pageNumber}:${limitNumber}:${JSON.stringify(query)}`;
-    const cached = await this.redis.get(cacheKey);
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+    const cached = (await this.redis.get(cacheKey)) as string | null;
+
     if (cached) return JSON.parse(cached);
 
     const where: any = {};
