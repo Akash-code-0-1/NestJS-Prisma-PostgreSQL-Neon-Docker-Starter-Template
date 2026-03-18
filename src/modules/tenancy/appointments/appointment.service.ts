@@ -6,7 +6,9 @@ import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { RedisService } from '../../../core/redis/redis.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
-import { Prisma } from '@prisma/client';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { Prisma } from '@prisma/client'; // keep this
+import { Decimal } from '@prisma/client/runtime/library';
 
 const APPOINTMENT_CACHE_PREFIX = 'appointments';
 
@@ -50,7 +52,7 @@ export class AppointmentService {
                 participantId: participant.id,
                 serviceId: s.serviceId,
                 employeeId: s.employeeId,
-                priceAtBooking: new Prisma.Decimal(s.priceAtBooking),
+                priceAtBooking: new Decimal(s.priceAtBooking), // ✅ fixed
                 startAt: new Date(s.startAt),
                 endAt: new Date(s.endAt),
               },
@@ -63,10 +65,10 @@ export class AppointmentService {
           await tx.payment.create({
             data: {
               appointmentId: appointment.id,
-              amount: new Prisma.Decimal(dto.payment.amount),
-              discount: new Prisma.Decimal(dto.payment.discount || 0),
-              tax: new Prisma.Decimal(dto.payment.tax || 0),
-              total: new Prisma.Decimal(dto.payment.total),
+              amount: new Decimal(dto.payment.amount), // ✅ fixed
+              discount: new Decimal(dto.payment.discount || 0), // ✅ fixed
+              tax: new Decimal(dto.payment.tax || 0), // ✅ fixed
+              total: new Decimal(dto.payment.total), // ✅ fixed
               method: dto.payment.method,
             },
           });
