@@ -42,6 +42,8 @@ model User {
   ownerProfile      OwnerProfile?    
   employeeProfile   EmployeeProfile?
   accountantProfile AccountantProfile?
+  mainAppointments Appointment[] @relation("MainClient")
+  participantEntries Participant[]
 
   @@index([email])
 }
@@ -109,6 +111,7 @@ model Salon {
   salonUsers    SalonUser[]
   services      Service[] 
   testimonials Testimonial[]
+  appointments Appointment[]
 
 
   @@index([status])
@@ -176,6 +179,7 @@ model Service {
   updatedAt    DateTime @updatedAt
 
   employees    ServiceEmployee[]
+  appointmentServices AppointmentService[]
 
   @@index([salonId])
 }
@@ -290,6 +294,7 @@ model EmployeeProfile {
   updatedAt        DateTime @updatedAt
 
   services         ServiceEmployee[]
+  assignedServices AppointmentService[]
 }
 
 
@@ -312,4 +317,131 @@ model AccountantProfile {
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+
+// -------------------------------------------------------------------------
+// APPOINTMENT
+// -------------------------------------------------------------------------
+
+model Appointment {
+  id           String        @id @default(uuid())
+  salonId      String
+  salon        Salon         @relation(fields: [salonId], references: [id])
+
+  clientId     String
+  client       User          @relation("MainClient", fields: [clientId], references: [id])
+
+  date         DateTime
+  note         String?
+  status       AppointmentStatus @default(PENDING)
+
+  participants Participant[]
+  payment      Payment?
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([salonId])
+  @@index([clientId])
+}
+
+
+// -------------------------------------------------------------------------
+// PARTICIPANT
+// -------------------------------------------------------------------------
+
+model Participant {
+  id            String   @id @default(uuid())
+  appointmentId String
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id])
+
+  name          String
+
+  services      AppointmentService[]
+}
+
+
+// -------------------------------------------------------------------------
+// APPOINTMENT SERVICE
+// -------------------------------------------------------------------------
+
+model AppointmentService {
+  id             String      @id @default(uuid())
+
+  participantId  String
+  participant    Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  serviceId      String
+  service        Service     @relation(fields: [serviceId], references: [id])
+
+  employeeId     String?
+  employee       EmployeeProfile? @relation(fields: [employeeId], references: [id])
+
+  priceAtBooking Decimal     @db.Decimal(10, 2)
+
+  // ✅ Updated time handling (your diagram)
+  startAt        DateTime
+  endAt          DateTime
+}
+
+
+// -------------------------------------------------------------------------
+// PAYMENT
+// -------------------------------------------------------------------------
+
+model Payment {
+  id              String        @id @default(uuid())
+
+  appointmentId   String        @unique
+  appointment     Appointment   @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  amount          Decimal       @db.Decimal(10, 2)
+  discount        Decimal       @default(0) @db.Decimal(10, 2)
+  tax             Decimal       @default(0) @db.Decimal(10, 2)
+  total           Decimal       @db.Decimal(10, 2)
+
+  currency        String        @default("EUR")
+
+  method          PaymentMethod
+  status          PaymentStatus @default(PENDING)
+
+  iban            String?
+  reference       String?       @unique
+
+  providerTransactionId String?
+
+  paidAt          DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+
+// -------------------------------------------------------------------------
+// ENUMS
+// -------------------------------------------------------------------------
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum PaymentMethod {
+  PAY_IN_SALON
+  CARD
+  APPLE_PAY
+  GOOGLE_PAY
+  BANK_TRANSFER
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
 }
