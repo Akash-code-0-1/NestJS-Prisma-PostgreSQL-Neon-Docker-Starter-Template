@@ -11,6 +11,7 @@ import { EmployeeAuthModule } from './modules/iam/auth/employee/employee.module'
 import { ClientAuthModule } from './modules/iam/auth/client/client-auth.module';
 import { ServicesModule } from './modules/tenancy/salons/services/services.module';
 import { TestimonialModule } from './modules/tenancy/salons/testimonials/testimonial.module';
+import { EmployeeManagementModule } from './modules/tenancy/salons/employee-management/employee-management.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { TestimonialModule } from './modules/tenancy/salons/testimonials/testimo
     ClientAuthModule,
     ServicesModule,
     TestimonialModule,
+    EmployeeManagementModule,
   ],
 })
 export class AppModule {}

@@ -50,9 +50,8 @@ export class ServicesService {
       });
 
       await this.redis.flushByPrefix(SERVICE_CACHE_PREFIX);
-
       return service;
-    } catch (error: unknown) {
+    } catch (error) {
       console.error(error);
       throw new HttpException(
         'Failed to create service',
@@ -73,11 +72,7 @@ export class ServicesService {
       include: {
         employees: {
           include: {
-            employee: {
-              include: {
-                user: true,
-              },
-            },
+            employee: { include: { user: true } },
           },
         },
       },
@@ -85,7 +80,6 @@ export class ServicesService {
     });
 
     await this.redis.set(key, JSON.stringify(services), 60);
-
     return services;
   }
 
@@ -94,18 +88,13 @@ export class ServicesService {
     const service = await this.prisma.service.findUnique({
       where: { id },
       include: {
-        employees: {
-          include: {
-            employee: true,
-          },
-        },
+        employees: { include: { employee: true } },
       },
     });
 
     if (!service) {
       throw new HttpException('Service not found', HttpStatus.NOT_FOUND);
     }
-
     return service;
   }
 
@@ -120,18 +109,14 @@ export class ServicesService {
     }
 
     let employeesData: any = undefined;
-
     if (dto.employeeIds) {
       const validEmployees = await this.prisma.employeeProfile.findMany({
         where: { id: { in: dto.employeeIds } },
         select: { id: true },
       });
-
       employeesData = {
         deleteMany: {},
-        create: validEmployees.map((emp) => ({
-          employeeId: emp.id,
-        })),
+        create: validEmployees.map((emp) => ({ employeeId: emp.id })),
       };
     }
 
@@ -151,20 +136,157 @@ export class ServicesService {
     });
 
     await this.redis.flushByPrefix(SERVICE_CACHE_PREFIX);
-
     return updated;
   }
 
   // ✅ Delete service
   async remove(id: string) {
-    await this.prisma.service.delete({
-      where: { id },
-    });
-
+    await this.prisma.service.delete({ where: { id } });
     await this.redis.flushByPrefix(SERVICE_CACHE_PREFIX);
+    return { message: 'Service deleted successfully' };
+  }
 
-    return {
-      message: 'Service deleted successfully',
+  // ✅ Search with pagination, sorting, multi-category, Redis caching
+  // async searchServices(
+  //   salonId: string,
+  //   search?: string,
+  //   page = 1,
+  //   limit = 10,
+  //   sortBy: string = 'createdAt',
+  //   order: 'asc' | 'desc' = 'desc',
+  //   categories?: string[], // multiple categories
+  // ) {
+  //   const skip = (page - 1) * limit;
+
+  //   const allowedSortFields = ['createdAt', 'price', 'duration', 'serviceName'];
+  //   const safeSortBy = allowedSortFields.includes(sortBy)
+  //     ? sortBy
+  //     : 'createdAt';
+  //   const safeOrder: 'asc' | 'desc' = order === 'asc' ? 'asc' : 'desc';
+
+  //   const key = `${SERVICE_CACHE_PREFIX}:${salonId}:search:${search || 'all'}:categories:${categories?.join('|') || 'all'}:page:${page}:limit:${limit}:sort:${safeSortBy}:${safeOrder}`;
+
+  //   const cached = await this.redis.get(key);
+  //   if (cached) return JSON.parse(cached as string);
+
+  //   const whereCondition: any = { salonId };
+  //   if (search)
+  //     whereCondition.serviceName = { contains: search, mode: 'insensitive' };
+  //   if (categories?.length) whereCondition.categories = { hasSome: categories };
+
+  //   const [services, total] = await Promise.all([
+  //     this.prisma.service.findMany({
+  //       where: whereCondition,
+  //       skip,
+  //       take: limit,
+  //       orderBy: { [safeSortBy]: safeOrder },
+  //       include: {
+  //         employees: { include: { employee: { include: { user: true } } } },
+  //       },
+  //     }),
+  //     this.prisma.service.count({ where: whereCondition }),
+  //   ]);
+
+  //   const result = {
+  //     data: services,
+  //     meta: {
+  //       total,
+  //       page,
+  //       limit,
+  //       totalPages: Math.ceil(total / limit),
+  //       sortBy: safeSortBy,
+  //       order: safeOrder,
+  //       categories: categories || null,
+  //     },
+  //   };
+
+  //   await this.redis.set(key, JSON.stringify(result), 60);
+  //   return result;
+  // }
+
+  async searchServices(
+    salonId: string,
+    search?: string,
+    page = 1,
+    limit = 10,
+    sortBy: string = 'createdAt',
+    order: 'asc' | 'desc' = 'desc',
+    categories?: string[],
+  ) {
+    const skip = (page - 1) * limit;
+
+    // ✅ Safe sorting
+    const allowedSortFields = ['createdAt', 'price', 'duration', 'serviceName'];
+    const safeSortBy = allowedSortFields.includes(sortBy)
+      ? sortBy
+      : 'createdAt';
+    const safeOrder: 'asc' | 'desc' = order === 'asc' ? 'asc' : 'desc';
+
+    // ✅ Redis cache key
+    const key = `${SERVICE_CACHE_PREFIX}:${salonId}:search:${search || 'all'}:categories:${categories?.join('|') || 'all'}:page:${page}:limit:${limit}:sort:${safeSortBy}:${safeOrder}`;
+
+    const cached = await this.redis.get(key);
+    if (cached) return JSON.parse(cached as string);
+
+    // ✅ Prisma where condition
+    const whereCondition: any = { salonId };
+
+    if (search) {
+      whereCondition.serviceName = { contains: search, mode: 'insensitive' };
+    }
+
+    if (categories?.length) {
+      whereCondition.categories = { hasSome: categories };
+    }
+
+    // ✅ Fetch services + count
+    const [services, total] = await Promise.all([
+      this.prisma.service.findMany({
+        where: whereCondition,
+        skip,
+        take: limit,
+        orderBy: { [safeSortBy]: safeOrder },
+        include: {
+          employees: {
+            include: {
+              employee: {
+                include: { user: true },
+              },
+            },
+          },
+        },
+      }),
+      this.prisma.service.count({ where: whereCondition }),
+    ]);
+
+    // ✅ Flatten employees for API response
+    const formattedServices = services.map((service) => ({
+      ...service,
+      employees: service.employees.map((se) => ({
+        id: se.employee.id,
+        name: `${se.employee.user?.firstName || ''} ${se.employee.user?.lastName || ''}`.trim(),
+        email: se.employee.user?.email,
+        designation: se.employee.designation,
+        salary: se.employee.salary,
+      })),
+    }));
+
+    const result = {
+      data: formattedServices,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        sortBy: safeSortBy,
+        order: safeOrder,
+        categories: categories || null,
+      },
     };
+
+    // ✅ Cache result in Redis
+    await this.redis.set(key, JSON.stringify(result), 60);
+
+    return result;
   }
 }

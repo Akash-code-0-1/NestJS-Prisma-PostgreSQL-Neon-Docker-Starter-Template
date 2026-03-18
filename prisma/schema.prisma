@@ -34,6 +34,7 @@ model User {
   role         Role?    
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  profilePicture String?
 
   // Relationships
   testimonials Testimonial[] 
@@ -207,37 +208,96 @@ model OwnerProfile {
   salonId        String  // Reference to the salon the owner belongs to
   salon          Salon   @relation(fields: [salonId], references: [id], onDelete: Cascade) // Reverse relation to Salon
 }
+// model EmployeeProfile {
+//   id          String   @id @default(uuid())
+//   userId      String   @unique
+//   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+//   salonId     String
+//   salon       Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+
+//   salary            Decimal  @db.Decimal(10,2)
+//   designation       String
+//   dob               String
+//   address           String
+//   city              String
+//   province          String
+//   cap               String
+//   emcName           String?
+//   emcNumber         String?
+//   contractType      String
+//   taxIdCode         String
+//   iban              String?
+//   startDate         DateTime
+//   endDate           DateTime
+//   remunerationType  String
+
+//   invitationStatus  Boolean  @default(true)
+
+//   deletedAt   DateTime?
+//   createdAt   DateTime @default(now())
+//   updatedAt   DateTime @updatedAt
+
+//   services ServiceEmployee[]
+// }
+
+
+
+enum ProfileStatus {
+  PENDING   // Profile created but not fully activated
+  ACTIVE    // Profile fully active
+  SUSPENDED // Optional future use
+}
+
 model EmployeeProfile {
-  id          String   @id @default(uuid())
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  salonId          String
+  salon            Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
 
-  salonId     String
-  salon       Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  salary           Decimal  @db.Decimal(10,2)
+  designation      String
+  dob              String
+  address          String
+  city             String
+  province         String
+  cap              String
+  emcName          String?
+  emcNumber        String?
+  contractType     String
+  taxIdCode        String
+  iban             String?
+  startDate        DateTime
+  endDate          DateTime
+  remunerationType String
 
-  salary            Decimal  @db.Decimal(10,2)
-  designation       String
-  dob               String
-  address           String
-  city              String
-  province          String
-  cap               String
-  emcName           String?
-  emcNumber         String?
-  contractType      String
-  taxIdCode         String
-  iban              String?
-  startDate         DateTime
-  endDate           DateTime
-  remunerationType  String
+  invitationStatus Boolean  @default(true)
 
-  invitationStatus  Boolean  @default(true)
+  employmentStatus EmploymentStatus @default(PENDING)
+  profileStatus    ProfileStatus   @default(PENDING)
+  lastActiveAt     DateTime?
+  dateOfJoining    DateTime?
+  dateOfLeaving    DateTime?
+  statusNote       String?
+  isDeleted        Boolean @default(false)
+  createdBy        String?
+  updatedBy        String?
+  lastLoginIp      String?
 
-  deletedAt   DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  deletedAt        DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  services ServiceEmployee[]
+  services         ServiceEmployee[]
+}
+
+
+enum EmploymentStatus {
+  PENDING
+  ACTIVE
+  ON_LEAVE
+  INACTIVE
 }
 
 model AccountantProfile {
