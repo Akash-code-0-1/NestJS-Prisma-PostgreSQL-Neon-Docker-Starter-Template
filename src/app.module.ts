@@ -13,7 +13,8 @@ import { ServicesModule } from './modules/tenancy/salons/services/services.modul
 import { TestimonialModule } from './modules/tenancy/salons/testimonials/testimonial.module';
 import { EmployeeManagementModule } from './modules/tenancy/salons/employee-management/employee-management.module';
 import { AppointmentModule } from './modules/tenancy/appointments/appointment.module';
-
+import { VoucherModule } from './modules/tenancy/create-voucher/create-voucher.module';
+import { BuyVoucherModule } from './modules/tenancy/buy_voucher/buy-voucher.module';
 @Module({
   imports: [
     ThrottlerModule.forRoot([
@@ -35,6 +36,8 @@ import { AppointmentModule } from './modules/tenancy/appointments/appointment.mo
     TestimonialModule,
     EmployeeManagementModule,
     AppointmentModule,
+    VoucherModule,
+    BuyVoucherModule,
   ],
 })
 export class AppModule {}

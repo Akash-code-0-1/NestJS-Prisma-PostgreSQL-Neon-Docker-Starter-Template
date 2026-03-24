@@ -26,7 +26,7 @@ export class AppointmentService {
   async create(salonId: string, dto: CreateAppointmentDto) {
     try {
       const result = await this.prisma.$transaction(async (tx) => {
-        // ✅ 1. Create appointment
+        // Create appointment
         const appointment = await tx.appointment.create({
           data: {
             salonId,
@@ -36,7 +36,7 @@ export class AppointmentService {
           },
         });
 
-        // ✅ 2. Participants + services
+        // Participants + services
         for (const p of dto.participants) {
           const participant = await tx.participant.create({
             data: {
@@ -52,7 +52,7 @@ export class AppointmentService {
                 participantId: participant.id,
                 serviceId: s.serviceId,
                 employeeId: s.employeeId,
-                priceAtBooking: new Decimal(s.priceAtBooking), // ✅ fixed
+                priceAtBooking: new Decimal(s.priceAtBooking),
                 startAt: new Date(s.startAt),
                 endAt: new Date(s.endAt),
               },
@@ -60,21 +60,21 @@ export class AppointmentService {
           }
         }
 
-        // ✅ 3. Payment (if exists)
+        // Payment (if exists)
         if (dto.payment) {
           await tx.payment.create({
             data: {
               appointmentId: appointment.id,
-              amount: new Decimal(dto.payment.amount), // ✅ fixed
-              discount: new Decimal(dto.payment.discount || 0), // ✅ fixed
-              tax: new Decimal(dto.payment.tax || 0), // ✅ fixed
-              total: new Decimal(dto.payment.total), // ✅ fixed
+              amount: new Decimal(dto.payment.amount),
+              discount: new Decimal(dto.payment.discount || 0),
+              tax: new Decimal(dto.payment.tax || 0),
+              total: new Decimal(dto.payment.total),
               method: dto.payment.method,
             },
           });
         }
 
-        // ✅ 4. Return full object
+        // Return full object
         return tx.appointment.findUnique({
           where: { id: appointment.id },
           include: {
@@ -88,7 +88,7 @@ export class AppointmentService {
         });
       });
 
-      // ✅ cache clear AFTER success
+      //  cache clear AFTER success
       await this.redis.flushByPrefix(APPOINTMENT_CACHE_PREFIX);
 
       return result;
@@ -98,7 +98,7 @@ export class AppointmentService {
     }
   }
 
-  // ✅ GET ALL
+  // GET ALL
 
   async findAll(salonId: string) {
     console.log('this.prisma:', this.prisma);

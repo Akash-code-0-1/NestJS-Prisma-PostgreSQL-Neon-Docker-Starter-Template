@@ -44,6 +44,7 @@ model User {
   accountantProfile AccountantProfile?
   mainAppointments Appointment[] @relation("MainClient")
   participantEntries Participant[]
+  voucherPurchases  VoucherPurchase[]
 
   @@index([email])
 }
@@ -112,6 +113,8 @@ model Salon {
   services      Service[] 
   testimonials Testimonial[]
   appointments Appointment[]
+  vouchers          Voucher[]
+  voucherPurchases  VoucherPurchase[]
 
 
   @@index([status])
@@ -212,40 +215,6 @@ model OwnerProfile {
   salonId        String  // Reference to the salon the owner belongs to
   salon          Salon   @relation(fields: [salonId], references: [id], onDelete: Cascade) // Reverse relation to Salon
 }
-// model EmployeeProfile {
-//   id          String   @id @default(uuid())
-//   userId      String   @unique
-//   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-//   salonId     String
-//   salon       Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
-
-//   salary            Decimal  @db.Decimal(10,2)
-//   designation       String
-//   dob               String
-//   address           String
-//   city              String
-//   province          String
-//   cap               String
-//   emcName           String?
-//   emcNumber         String?
-//   contractType      String
-//   taxIdCode         String
-//   iban              String?
-//   startDate         DateTime
-//   endDate           DateTime
-//   remunerationType  String
-
-//   invitationStatus  Boolean  @default(true)
-
-//   deletedAt   DateTime?
-//   createdAt   DateTime @default(now())
-//   updatedAt   DateTime @updatedAt
-
-//   services ServiceEmployee[]
-// }
-
-
 
 enum ProfileStatus {
   PENDING   // Profile created but not fully activated
@@ -396,8 +365,12 @@ model AppointmentService {
 model Payment {
   id              String        @id @default(uuid())
 
-  appointmentId   String        @unique
-  appointment     Appointment   @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  // ✅ make unique for 1:1
+  appointmentId   String?       @unique
+  appointment     Appointment?  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  // ❌ REMOVE relation definition here
+  voucherPurchase VoucherPurchase?
 
   amount          Decimal       @db.Decimal(10, 2)
   discount        Decimal       @default(0) @db.Decimal(10, 2)
@@ -411,7 +384,6 @@ model Payment {
 
   iban            String?
   reference       String?       @unique
-
   providerTransactionId String?
 
   paidAt          DateTime?
@@ -444,4 +416,76 @@ enum PaymentStatus {
   PAID
   FAILED
   REFUNDED
+}
+
+
+// -------------------------------------------------------------------------
+//                                 VOUCHER
+// -------------------------------------------------------------------------
+
+model Voucher {
+  id          String   @id @default(uuid())
+
+  salonId     String
+  salon       Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+
+  title       String
+  subtitle    String?
+
+  value       Decimal  @db.Decimal(10,2)
+  price       Decimal  @db.Decimal(10,2)
+
+  discountPercent Int?
+  description String?
+
+  validityDays Int
+
+  imageUrl    String?
+  theme       String?
+
+  isActive    Boolean @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  purchases   VoucherPurchase[]
+
+  @@index([salonId])
+  @@index([isActive])
+}
+
+model VoucherPurchase {
+  id        String   @id @default(uuid())
+
+  voucherId String
+  voucher   Voucher  @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+
+  salonId   String
+  salon     Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  code            String   @unique
+  senderName      String
+  recipientName   String
+  recipientEmail  String
+  message         String?
+
+  expiryDate      DateTime
+  status          VoucherStatus @default(PENDING)
+
+  // ✅ ONLY HERE define relation
+  paymentId       String?  @unique
+  payment         Payment? @relation(fields: [paymentId], references: [id])
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+enum VoucherStatus {
+  PENDING
+  PAID
+  CANCELLED
+  EXPIRED
 }
