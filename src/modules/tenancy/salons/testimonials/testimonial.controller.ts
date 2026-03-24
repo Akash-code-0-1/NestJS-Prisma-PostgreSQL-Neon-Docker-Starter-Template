@@ -63,7 +63,6 @@ export class TestimonialController {
     @Body() dto: UpdateTestimonialDto,
   ) {
     const userId = req.user?.id ?? req.user?.sub;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     if (!userId) throw new UnauthorizedException('No userId in token');
     return this.service.update(id, salonId, dto, userId);
   }

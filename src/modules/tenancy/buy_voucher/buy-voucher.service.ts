@@ -1,9 +1,3 @@
-/* eslint-disable @typescript-eslint/require-await */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-
 import { HttpException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { RedisService } from '../../../core/redis/redis.service';
@@ -54,7 +48,7 @@ export class BuyVoucherService {
           total: voucher.price,
           method: dto.paymentMethod, // must match PaymentMethod enum
           status: 'PENDING',
-          voucherPurchase: { connect: { id: purchase.id } }, // link 1:1
+          voucherPurchase: { connect: { id: purchase.id } },
         },
       });
 
