@@ -33,7 +33,6 @@
 //   // createdBy?: string; // Can be the admin creating the salon
 //   // updatedBy?: string; // Admin who updates the salon
 // }
-
 import {
   IsString,
   IsNotEmpty,
@@ -44,28 +43,59 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { OwnerDto } from '../../../../modules/iam/auth/salon-owners/dto/owner.dto';
-import { PlanType } from '@prisma/client';
+
+// Direct string union matching Prisma schema
+export type PlanType = 'BASIC' | 'PREMIUM' | 'ENTERPRISE';
 
 export class CreateSalonDto {
-  @IsString() @IsNotEmpty() name: string;
-  @IsString() @IsNotEmpty() businessType: string;
-  @IsString() @IsNotEmpty() vtaNumber: string;
-  @IsString() @IsNotEmpty() employeeCount: string;
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsString()
+  @IsNotEmpty()
+  businessType: string;
+
+  @IsString()
+  @IsNotEmpty()
+  vtaNumber: string;
+
+  @IsString()
+  @IsNotEmpty()
+  employeeCount: string;
 
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => OwnerDto)
   owners: OwnerDto[];
 
-  @IsEmail() email: string;
-  @IsString() @IsNotEmpty() phoneNumber: string;
-  @IsString() @IsNotEmpty() country: string;
-  @IsString() @IsNotEmpty() city: string;
-  @IsString() @IsNotEmpty() province: string;
-  @IsString() @IsNotEmpty() zipCode: string;
+  @IsEmail()
+  email: string;
 
-  @IsString() @IsNotEmpty() trialPeriod: string;
+  @IsString()
+  @IsNotEmpty()
+  phoneNumber: string;
 
-  @IsEnum(PlanType)
+  @IsString()
+  @IsNotEmpty()
+  country: string;
+
+  @IsString()
+  @IsNotEmpty()
+  city: string;
+
+  @IsString()
+  @IsNotEmpty()
+  province: string;
+
+  @IsString()
+  @IsNotEmpty()
+  zipCode: string;
+
+  @IsString()
+  @IsNotEmpty()
+  trialPeriod: string;
+
+  @IsEnum(['BASIC', 'PREMIUM', 'ENTERPRISE'] as const)
   initialPlan: PlanType;
 }
