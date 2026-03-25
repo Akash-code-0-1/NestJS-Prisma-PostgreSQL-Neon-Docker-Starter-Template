@@ -25,9 +25,11 @@
 //   @IsEnum(PaymentMethod)
 //   paymentMethod: PaymentMethod;
 // }
-
 import { IsString, IsEmail, IsOptional, IsEnum } from 'class-validator';
 import { Prisma } from '@prisma/client';
+
+// Use string union from Prisma
+type PaymentMethod = Prisma.PaymentMethod;
 
 export class BuyVoucherDto {
   @IsString()
@@ -49,6 +51,12 @@ export class BuyVoucherDto {
   @IsString()
   message?: string;
 
-  @IsEnum(Prisma.PaymentMethod)
-  paymentMethod: Prisma.PaymentMethod;
+  @IsEnum([
+    'PAY_IN_SALON',
+    'CARD',
+    'APPLE_PAY',
+    'GOOGLE_PAY',
+    'BANK_TRANSFER',
+  ] as const)
+  paymentMethod: PaymentMethod;
 }
