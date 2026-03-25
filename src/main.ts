@@ -7,6 +7,7 @@ import { WinstonLogger } from './core/logger/winston.logger';
 import { LoggingInterceptor } from './core/interceptors/logging.interceptor';
 import { PerformanceInterceptor } from './core/matrics/performance.interceptor';
 import { ResponseInterceptor } from './core/interceptors/response.interceptor';
+import { DebugInterceptor } from './core/interceptors/debug.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -19,6 +20,7 @@ async function bootstrap() {
     new LoggingInterceptor(),
     new PerformanceInterceptor(),
     new ResponseInterceptor(),
+    new DebugInterceptor(),
   );
 
   await app.listen(process.env.PORT ?? 3000);

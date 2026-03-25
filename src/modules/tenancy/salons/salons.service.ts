@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-base-to-string */
@@ -8,6 +9,7 @@ import { RedisService } from '../../../core/redis/redis.service';
 import { SALON_CACHE_PREFIX } from '../../../core/redis/redis.constants';
 import { FilterSalonDto } from '../salons/dto/admin-salon-filter.dto';
 import { CreateSalonDto } from './dto/create-salon.dto';
+import { PlanType } from '@prisma/client';
 
 export enum Role {
   SUPER_ADMIN = 'SUPER_ADMIN',
@@ -70,7 +72,7 @@ export class SalonsService {
           city: dto.city,
           zipCode: dto.zipCode,
           status: 'TRIAL',
-          plan: dto.initialPlan || 'BASIC', // plan as string
+          plan: dto.initialPlan || PlanType.BASIC,
           trialEndsAt,
           createdBy: currentUserId, // Admin who created the salon
           updatedBy: currentUserId, // Admin who created the salon (initially the same)
