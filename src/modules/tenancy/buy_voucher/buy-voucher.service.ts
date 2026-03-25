@@ -13,7 +13,6 @@ export class BuyVoucherService {
 
   async buy(salonId: string, dto: BuyVoucherDto) {
     return this.prisma.$transaction(async (tx) => {
-      // Step 1: find voucher
       const voucher = await tx.voucher.findUnique({
         where: { id: dto.voucherId },
       });
@@ -22,11 +21,9 @@ export class BuyVoucherService {
         throw new HttpException('Invalid voucher', 400);
       }
 
-      // Step 2: calculate expiry
       const expiryDate = new Date();
       expiryDate.setDate(expiryDate.getDate() + voucher.validityDays);
 
-      // Step 3: create voucher purchase (without payment first)
       const purchase = await tx.voucherPurchase.create({
         data: {
           voucherId: voucher.id,
@@ -41,7 +38,6 @@ export class BuyVoucherService {
         },
       });
 
-      // Step 4: create payment and connect to purchase
       const payment = await tx.payment.create({
         data: {
           amount: voucher.price,
@@ -51,8 +47,6 @@ export class BuyVoucherService {
           voucherPurchase: { connect: { id: purchase.id } },
         },
       });
-
-      // Step 5: update purchase with paymentId
       await tx.voucherPurchase.update({
         where: { id: purchase.id },
         data: { paymentId: payment.id },
