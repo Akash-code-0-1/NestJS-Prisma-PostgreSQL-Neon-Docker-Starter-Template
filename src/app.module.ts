@@ -16,6 +16,7 @@ import { AppointmentModule } from './modules/tenancy/appointments/appointment.mo
 import { VoucherModule } from './modules/tenancy/create-voucher/create-voucher.module';
 import { BuyVoucherModule } from './modules/tenancy/buy_voucher/buy-voucher.module';
 import { ContactModule } from './modules/tenancy/contact/contact.module';
+import { ReceiptsModule } from './modules/finance/receipts/receipt.module';
 @Module({
   imports: [
     ThrottlerModule.forRoot([
@@ -40,6 +41,7 @@ import { ContactModule } from './modules/tenancy/contact/contact.module';
     VoucherModule,
     BuyVoucherModule,
     ContactModule,
+    ReceiptsModule,
   ],
 })
 export class AppModule {}
