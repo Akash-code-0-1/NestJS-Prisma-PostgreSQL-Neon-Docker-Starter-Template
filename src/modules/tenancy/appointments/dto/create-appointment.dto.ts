@@ -69,29 +69,6 @@
 //   method: PaymentMethod;
 // }
 
-// // export class CreateAppointmentDto {
-// //   @IsString()
-// //   clientId: string;
-
-// //   @IsDateString()
-// //   date: string;
-
-// //   @IsOptional()
-// //   @IsString()
-// //   note?: string;
-
-// //   @IsArray()
-// //   @ValidateNested({ each: true })
-// //   @Type(() => CreateParticipantDto)
-// //   participants: CreateParticipantDto[];
-
-// //   @IsOptional()
-// //   @ValidateNested()
-// //   @Type(() => CreatePaymentDto)
-// //   payment?: CreatePaymentDto;
-// // }
-
-// // ... existing imports
 // export class CreateAppointmentDto {
 //   @IsString()
 //   clientId: string;
@@ -100,12 +77,12 @@
 //   date: string;
 
 //   @IsOptional()
-//   @IsEnum(AppointmentStatus) // Add this to allow status updates!
-//   status?: AppointmentStatus;
-
-//   @IsOptional()
 //   @IsString()
 //   note?: string;
+
+//   @IsOptional()
+//   @IsEnum(AppointmentStatus)
+//   status?: AppointmentStatus;
 
 //   @IsArray()
 //   @ValidateNested({ each: true })
@@ -128,7 +105,16 @@ import {
   IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { AppointmentStatus } from '@prisma/client';
+
+// Defined locally to prevent Prisma build import errors
+export enum AppointmentStatus {
+  BOOKED = 'BOOKED',
+  STARTED = 'STARTED',
+  CONFIRMED = 'CONFIRMED',
+  CANCELLED = 'CANCELLED',
+  COMPLETED = 'COMPLETED',
+  ARRIVED = 'ARRIVED',
+}
 
 enum PaymentMethod {
   PAY_IN_SALON = 'PAY_IN_SALON',
