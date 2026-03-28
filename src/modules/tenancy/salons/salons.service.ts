@@ -234,7 +234,6 @@ export class SalonsService {
 
     const cacheKey = this.buildCacheKey(filters);
     const cached = await this.redisService.get(cacheKey);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     if (cached) return JSON.parse(cached.toString());
 
     const where: any = { deletedAt: null };

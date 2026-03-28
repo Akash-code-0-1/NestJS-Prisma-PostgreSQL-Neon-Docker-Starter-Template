@@ -1,28 +1,65 @@
-import { Controller, Post, Body, Param, Get, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Param,
+  Get,
+  Delete,
+  Query,
+  Patch,
+} from '@nestjs/common';
 import { AppointmentService } from './appointment.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
+import { AppointmentStatus } from '@prisma/client';
 
 @Controller('salons/:salonId/appointments')
 export class AppointmentController {
   constructor(private readonly service: AppointmentService) {}
 
   @Post()
-  create(@Param('salonId') salonId: string, @Body() dto: CreateAppointmentDto) {
-    return this.service.create(salonId, dto);
+  async create(
+    @Param('salonId') salonId: string,
+    @Body() dto: CreateAppointmentDto,
+  ) {
+    return await this.service.create(salonId, dto);
   }
 
   @Get()
-  findAll(@Param('salonId') salonId: string) {
-    return this.service.findAll(salonId);
+  async findAll(
+    @Param('salonId') salonId: string,
+    @Query('status') status?: AppointmentStatus,
+    @Query('view') view?: 'day' | 'week' | 'month',
+    @Query('date') date?: string,
+    @Query('search') search?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return await this.service.findAll(salonId, {
+      status,
+      view,
+      date,
+      search,
+      page,
+      limit,
+    });
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
+  async findOne(@Param('id') id: string, @Param('salonId') salonId: string) {
+    return await this.service.findOne(id, salonId);
+  }
+
+  @Patch(':id')
+  async update(
+    @Param('id') id: string,
+    @Param('salonId') salonId: string,
+    @Body() dto: Partial<CreateAppointmentDto>,
+  ) {
+    return await this.service.update(id, salonId, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  async remove(@Param('id') id: string, @Param('salonId') salonId: string) {
+    return await this.service.remove(id, salonId);
   }
 }

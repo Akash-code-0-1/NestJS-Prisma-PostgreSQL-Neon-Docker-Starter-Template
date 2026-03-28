@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { RedisService } from '../../../core/redis/redis.service';
@@ -20,7 +16,6 @@ export class VoucherService {
   }
 
   async create(salonId: string, dto: CreateVoucherDto) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     const voucher = await this.prisma.voucher.create({
       data: {
         salonId,

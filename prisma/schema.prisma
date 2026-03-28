@@ -307,7 +307,7 @@ model Appointment {
 
   date         DateTime
   note         String?
-  status       AppointmentStatus @default(PENDING)
+  status       AppointmentStatus @default(BOOKED)
 
   participants Participant[]
   receipt      Receipt?
@@ -404,10 +404,12 @@ model Payment {
 // -------------------------------------------------------------------------
 
 enum AppointmentStatus {
-  PENDING
+  BOOKED
+  STARTED
   CONFIRMED
   CANCELLED
   COMPLETED
+  ARRIVED
 }
 
 enum PaymentMethod {
