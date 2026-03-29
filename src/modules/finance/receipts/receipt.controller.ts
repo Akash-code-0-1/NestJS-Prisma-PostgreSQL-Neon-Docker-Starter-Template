@@ -49,6 +49,12 @@ export class ReceiptsController {
     });
   }
 
+  @Get(':id')
+  @Roles('SALON_OWNER', 'ACCOUNTANT', 'CLIENT')
+  async findOne(@Param('id') id: string, @Param('salonId') salonId: string) {
+    return this.receiptsService.findOne(id, salonId);
+  }
+
   @Patch(':id')
   @Roles('SALON_OWNER')
   update(

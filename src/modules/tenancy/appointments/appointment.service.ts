@@ -249,7 +249,6 @@
 import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { RedisService } from '../../../core/redis/redis.service';
-// Import AppointmentStatus from the DTO where you defined it locally
 import {
   CreateAppointmentDto,
   AppointmentStatus,
@@ -268,22 +267,50 @@ export class AppointmentService {
     private readonly redis: RedisService,
   ) {}
 
+  // ---------------------- LOG FUNCTION ----------------------
+  private async log(
+    tx: any,
+    appointmentId: string,
+    action: string,
+    status: AppointmentStatus,
+    userId?: string,
+  ) {
+    await tx.appointmentLog.create({
+      data: {
+        appointmentId,
+        action,
+        status,
+        userId,
+      },
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // CREATE
+  // -------------------------------------------------------------------------
   async create(salonId: string, dto: CreateAppointmentDto) {
     try {
       const result = await this.prisma.$transaction(async (tx) => {
-        // 1. Create main appointment
         const appointment = await tx.appointment.create({
           data: {
             salonId,
             clientId: dto.clientId,
             date: new Date(dto.date),
             note: dto.note,
-            // Fixed: Cast to any to bypass Prisma's internal Enum check
             status: (dto.status || AppointmentStatus.BOOKED) as any,
           },
         });
 
-        // 2. Handle Participants and Services
+        // ✅ LOG CREATED
+        await this.log(
+          tx,
+          appointment.id,
+          'CREATED',
+          dto.status || AppointmentStatus.BOOKED,
+          dto.clientId,
+        );
+
+        // ---------------- PARTICIPANTS ----------------
         if (dto.participants) {
           for (const p of dto.participants) {
             const participant = await tx.participant.create({
@@ -309,7 +336,7 @@ export class AppointmentService {
           }
         }
 
-        // 3. Handle Payment
+        // ---------------- PAYMENT ----------------
         if (dto.payment) {
           await tx.payment.create({
             data: {
@@ -318,10 +345,24 @@ export class AppointmentService {
               discount: new Decimal(dto.payment.discount || 0),
               tax: new Decimal(dto.payment.tax || 0),
               total: new Decimal(dto.payment.total),
-              // Fixed: Cast method to any
               method: dto.payment.method as any,
             },
           });
+
+          // ✅ Update appointment status to PAID
+          await tx.appointment.update({
+            where: { id: appointment.id },
+            data: { status: AppointmentStatus.PAID as any },
+          });
+
+          // ✅ Log payment
+          await this.log(
+            tx,
+            appointment.id,
+            'PAYMENT_COMPLETED',
+            AppointmentStatus.PAID,
+            dto.clientId,
+          );
         }
 
         return appointment;
@@ -338,6 +379,9 @@ export class AppointmentService {
     }
   }
 
+  // -------------------------------------------------------------------------
+  // FIND ALL
+  // -------------------------------------------------------------------------
   async findAll(
     salonId: string,
     query: {
@@ -350,7 +394,6 @@ export class AppointmentService {
     },
   ) {
     const { status, view, date, search } = query;
-
     const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 10;
     const skip = (page - 1) * limit;
@@ -359,7 +402,6 @@ export class AppointmentService {
     const cached = await this.redis.get(cacheKey);
     if (cached) return cached;
 
-    // Fixed: Cast 'where' as any or explicitly cast status to any
     const where: any = {
       salonId,
       ...(status && { status: status as any }),
@@ -377,6 +419,7 @@ export class AppointmentService {
         start = targetDate.startOf('month').toDate();
         end = targetDate.endOf('month').toDate();
       }
+
       where.date = { gte: start, lte: end };
     }
 
@@ -434,6 +477,9 @@ export class AppointmentService {
     return result;
   }
 
+  // -------------------------------------------------------------------------
+  // UPDATE
+  // -------------------------------------------------------------------------
   async update(
     id: string,
     salonId: string,
@@ -445,7 +491,6 @@ export class AppointmentService {
         data: {
           ...(dto.date && { date: new Date(dto.date) }),
           ...(dto.note !== undefined && { note: dto.note }),
-          // Fixed: Cast status to any to bridge DTO enum and Prisma enum
           ...(dto.status && { status: dto.status as any }),
         },
         include: {
@@ -454,6 +499,25 @@ export class AppointmentService {
           payment: true,
         },
       });
+
+      // ✅ LOG UPDATED
+      await this.prisma.appointmentLog.create({
+        data: {
+          appointmentId: id,
+          action: 'UPDATED',
+          status: (dto.status as any) || result.status,
+        },
+      });
+
+      if (dto.status) {
+        await this.prisma.appointmentLog.create({
+          data: {
+            appointmentId: id,
+            action: 'STATUS_CHANGED',
+            status: dto.status,
+          },
+        });
+      }
 
       await this.redis.flushByPrefix(`${APPOINTMENT_CACHE_PREFIX}:${salonId}`);
       return result;
@@ -466,6 +530,9 @@ export class AppointmentService {
     }
   }
 
+  // -------------------------------------------------------------------------
+  // FIND ONE
+  // -------------------------------------------------------------------------
   async findOne(id: string, salonId: string) {
     const data = await this.prisma.appointment.findFirst({
       where: { id, salonId },
@@ -485,9 +552,43 @@ export class AppointmentService {
     return data;
   }
 
+  // -------------------------------------------------------------------------
+  // REMOVE
+  // -------------------------------------------------------------------------
   async remove(id: string, salonId: string) {
     await this.prisma.appointment.delete({ where: { id, salonId } });
+
+    // ✅ LOG DELETED
+    await this.prisma.appointmentLog.create({
+      data: {
+        appointmentId: id,
+        action: 'DELETED',
+        status: AppointmentStatus.CANCELLED,
+      },
+    });
+
     await this.redis.flushByPrefix(`${APPOINTMENT_CACHE_PREFIX}:${salonId}`);
     return { success: true };
+  }
+
+  // -------------------------------------------------------------------------
+  // GET LOGS
+  // -------------------------------------------------------------------------
+  async getLogs(appointmentId: string, salonId: string) {
+    try {
+      return await this.prisma.appointmentLog.findMany({
+        where: {
+          appointmentId,
+          appointment: { salonId },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+    } catch (error) {
+      this.logger.error(error);
+      throw new HttpException(
+        'Failed to fetch logs',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

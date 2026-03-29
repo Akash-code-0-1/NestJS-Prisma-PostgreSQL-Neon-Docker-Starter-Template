@@ -62,6 +62,11 @@ export class AppointmentController {
     return await this.service.update(id, salonId, dto);
   }
 
+  @Get(':id/logs')
+  async getLogs(@Param('id') id: string, @Param('salonId') salonId: string) {
+    return await this.service.getLogs(id, salonId);
+  }
+
   @Delete(':id')
   async remove(@Param('id') id: string, @Param('salonId') salonId: string) {
     return await this.service.remove(id, salonId);

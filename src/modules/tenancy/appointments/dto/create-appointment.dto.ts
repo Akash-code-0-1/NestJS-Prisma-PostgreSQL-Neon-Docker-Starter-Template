@@ -114,6 +114,7 @@ export enum AppointmentStatus {
   CANCELLED = 'CANCELLED',
   COMPLETED = 'COMPLETED',
   ARRIVED = 'ARRIVED',
+  PAID = 'PAID',
 }
 
 enum PaymentMethod {
