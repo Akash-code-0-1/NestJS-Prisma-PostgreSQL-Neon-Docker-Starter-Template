@@ -17,6 +17,7 @@ import { VoucherModule } from './modules/tenancy/create-voucher/create-voucher.m
 import { BuyVoucherModule } from './modules/tenancy/buy_voucher/buy-voucher.module';
 import { ContactModule } from './modules/tenancy/contact/contact.module';
 import { ReceiptsModule } from './modules/finance/receipts/receipt.module';
+import { BundleModule } from './modules/tenancy/salons/bundle-management/bundle.module';
 @Module({
   imports: [
     ThrottlerModule.forRoot([
@@ -42,6 +43,7 @@ import { ReceiptsModule } from './modules/finance/receipts/receipt.module';
     BuyVoucherModule,
     ContactModule,
     ReceiptsModule,
+    BundleModule,
   ],
 })
 export class AppModule {}

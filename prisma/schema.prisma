@@ -1,3 +1,4 @@
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -120,6 +121,7 @@ model Salon {
   voucherPurchases  VoucherPurchase[]
   contactMessages ContactMessage[]
   receipts        Receipt[]
+  bundles         Bundle[]
 
 
   @@index([status])
@@ -188,6 +190,7 @@ model Service {
 
   employees    ServiceEmployee[]
   appointmentServices AppointmentService[]
+  bundleServices BundleService[]
 
   @@index([salonId])
 }
@@ -227,6 +230,9 @@ enum ProfileStatus {
   SUSPENDED // Optional future use
 }
 
+// -------------------------------------------------------------------------
+// NEW MODEL: Direct Manager (To handle the Manager UI section)
+// -------------------------------------------------------------------------
 model EmployeeProfile {
   id               String   @id @default(uuid())
   userId           String   @unique
@@ -234,7 +240,13 @@ model EmployeeProfile {
   salonId          String
   salon            Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
 
-  salary           Decimal  @db.Decimal(10,2)
+  // --- [NEW] Personal Data ---
+  phone            String?
+  gender           String?   
+  age              Int?      
+
+  // --- [EXISTING] Employment Data (UNCHANGED) ---
+  salary           Decimal   @db.Decimal(10, 2)
   designation      String
   dob              String
   address          String
@@ -250,10 +262,21 @@ model EmployeeProfile {
   endDate          DateTime
   remunerationType String
 
-  invitationStatus Boolean  @default(true)
+  // --- [NEW] Additional Professional Data ---
+  certifications   String[]  @default([])
+  completedCourses String[]  @default([])
+  
+  languages        EmployeeLanguage[]
+  socialConnections SocialConnection[]
 
+  // --- [NEW] Direct Manager Link ---
+  directManagerId  String?
+  directManager    DirectManager? @relation(fields: [directManagerId], references: [id])
+
+  // --- [EXISTING] Status & Meta (UNCHANGED) ---
+  invitationStatus Boolean   @default(true)
   employmentStatus EmploymentStatus @default(PENDING)
-  profileStatus    ProfileStatus   @default(PENDING)
+  profileStatus    ProfileStatus    @default(PENDING)
   lastActiveAt     DateTime?
   dateOfJoining    DateTime?
   dateOfLeaving    DateTime?
@@ -269,6 +292,34 @@ model EmployeeProfile {
 
   services         ServiceEmployee[]
   assignedServices AppointmentService[]
+  bundleMembers    BundleMember[]
+}
+
+model DirectManager {
+  id              String   @id @default(uuid())
+  name            String   
+  lastAccessAt    DateTime @default(now())
+  permits         String   @default("All")
+  employees       EmployeeProfile[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model EmployeeLanguage {
+  id         String          @id @default(uuid())
+  name       String          
+  level      String          
+  employeeId String
+  employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+model SocialConnection {
+  id           String          @id @default(uuid())
+  platform     String          
+  status       String          @default("Not Connected") 
+  employeeId   String
+  employee     EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 }
 
 
@@ -622,4 +673,75 @@ enum ReceiptStatus {
   PAID
   CANCELLED
   REFUNDED
+}
+
+
+// -------------------------------------------------------------------------
+// BUNDLES (NEW MODELS)
+// -------------------------------------------------------------------------
+
+enum BundleScheduleType {
+  BOOKED_IN_SEQUENCE
+  BOOKED_IN_PARALLEL
+}
+
+enum BundleCategory {
+  REGULAR
+  PROMOTION
+}
+
+enum BundlePriceType {
+  FIXED
+  PERCENTAGE_DISCOUNT
+}
+
+model Bundle {
+  id              String             @id @default(uuid())
+  salonId         String
+  salon           Salon              @relation(fields: [salonId], references: [id], onDelete: Cascade)
+
+  name            String
+  category        BundleCategory     @default(REGULAR)
+  description     String?            @db.Text
+  
+  priceType       BundlePriceType    @default(FIXED)
+  price           Decimal            @db.Decimal(10, 2)
+  duration        Int                // Total duration in minutes
+  
+  scheduleType    BundleScheduleType @default(BOOKED_IN_SEQUENCE)
+  addToOnlineBook Boolean            @default(true)
+  
+  isActive        Boolean            @default(true)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  // Relationships
+  services        BundleService[]
+  members         BundleMember[]
+  
+  @@index([salonId])
+}
+
+// Junction table for Bundle ↔ Service
+model BundleService {
+  id        String   @id @default(uuid())
+  bundleId  String
+  serviceId String
+
+  bundle    Bundle   @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  service   Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([bundleId, serviceId])
+}
+
+// Junction table for Bundle ↔ EmployeeProfile
+model BundleMember {
+  id         String          @id @default(uuid())
+  bundleId   String
+  employeeId String
+
+  bundle     Bundle          @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([bundleId, employeeId])
 }

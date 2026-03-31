@@ -4,3 +4,4 @@ export const SALON_CACHE_PREFIX = 'admin:salons:v1';
 export const SERVICE_CACHE_PREFIX = 'salon_services';
 export const TESTIMONIAL_CACHE_PREFIX = 'salon_testimonials';
 export const RECEIPT_CACHE_PREFIX = 'salon_receipts:v1';
+export const BUNDLE_CACHE_PREFIX = 'salon_bundles:v1';

@@ -25,6 +25,7 @@ const create_voucher_module_1 = require("./modules/tenancy/create-voucher/create
 const buy_voucher_module_1 = require("./modules/tenancy/buy_voucher/buy-voucher.module");
 const contact_module_1 = require("./modules/tenancy/contact/contact.module");
 const receipt_module_1 = require("./modules/finance/receipts/receipt.module");
+const bundle_module_1 = require("./modules/tenancy/salons/bundle-management/bundle.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -53,6 +54,7 @@ exports.AppModule = AppModule = __decorate([
             buy_voucher_module_1.BuyVoucherModule,
             contact_module_1.ContactModule,
             receipt_module_1.ReceiptsModule,
+            bundle_module_1.BundleModule,
         ],
     })
 ], AppModule);
