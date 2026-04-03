@@ -5,6 +5,7 @@ import { REDIS_CLIENT, REDIS_DEFAULT_TTL } from './redis.constants';
 
 @Injectable()
 export class RedisService implements OnModuleDestroy {
+  keys: any;
   constructor(@Inject(REDIS_CLIENT) private readonly redis: Redis) {}
 
   async get<T>(key: string): Promise<T | null> {
