@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import {
   IsString,
   IsEnum,
@@ -9,12 +8,22 @@ import {
   IsUUID,
   Min,
 } from 'class-validator';
-import {
-  BundleScheduleType,
-  BundleCategory,
-  BundlePriceType,
-} from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
+
+enum BundleScheduleType {
+  BOOKED_IN_SEQUENCE = 'BOOKED_IN_SEQUENCE',
+  BOOKED_IN_PARALLEL = 'BOOKED_IN_PARALLEL',
+}
+
+enum BundlePriceType {
+  REGULAR = 'REGULAR',
+  PROMOTION = 'PROMOTION',
+}
+
+enum BundleCategory {
+  FIXED = 'FIXED',
+  PERCENTAGE_DISCOUNT = 'PERCENTAGE_DISCOUNT',
+}
 
 export class CreateBundleDto {
   @IsString()
