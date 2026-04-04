@@ -1,12 +1,11 @@
 import {
-  Bundle,
   BundleScheduleType,
   BundleCategory,
   BundlePriceType,
 } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
-export class BundleEntity implements Bundle {
+export class BundleEntity {
   id: string;
   salonId: string;
   name: string;
