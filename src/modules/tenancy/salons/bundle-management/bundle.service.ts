@@ -174,7 +174,6 @@
 //     };
 //   }
 // }
-
 /* eslint-disable @typescript-eslint/no-base-to-string */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
@@ -184,7 +183,6 @@ import { PrismaService } from '../../../../core/prisma/prisma.service';
 import { CreateBundleDto } from './dto/create-bundle.dto';
 import { BUNDLE_CACHE_PREFIX } from 'src/core/redis/redis.constants';
 import { RedisService } from 'src/core/redis/redis.service';
-import { $Enums } from '@prisma/client'; // ✅ FIX
 
 @Injectable()
 export class BundlesService {
@@ -221,11 +219,10 @@ export class BundlesService {
           salonId,
           name: dto.name,
 
-          // ✅ FIXED ENUMS
-          category: dto.category as unknown as $Enums.BundleCategory,
-          priceType: dto.priceType as unknown as $Enums.BundlePriceType,
-          scheduleType:
-            dto.scheduleType as unknown as $Enums.BundleScheduleType,
+          // ✅ CAST TO PRISMA TYPE USING DTO ENUM
+          category: dto.category as any,
+          priceType: dto.priceType as any,
+          scheduleType: dto.scheduleType as any,
 
           description: dto.description,
           price: dto.price,
@@ -267,7 +264,7 @@ export class BundlesService {
     }
 
     if (category) {
-      where.category = category as unknown as $Enums.BundleCategory;
+      where.category = category as any;
     }
 
     const [total, data] = await this.prisma.$transaction([
@@ -345,11 +342,9 @@ export class BundlesService {
         data: {
           name: dto.name,
 
-          // ✅ FIXED ENUMS
-          category: dto.category as unknown as $Enums.BundleCategory,
-          priceType: dto.priceType as unknown as $Enums.BundlePriceType,
-          scheduleType:
-            dto.scheduleType as unknown as $Enums.BundleScheduleType,
+          category: dto.category as any,
+          priceType: dto.priceType as any,
+          scheduleType: dto.scheduleType as any,
 
           description: dto.description,
           price: dto.price,
