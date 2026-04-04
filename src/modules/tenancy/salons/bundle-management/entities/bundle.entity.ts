@@ -30,4 +30,4 @@ export class BundleEntity implements Bundle {
     Object.assign(this, partial);
   }
 }
-export { BundleCategory };
+export { BundleCategory, BundleScheduleType, BundlePriceType };
