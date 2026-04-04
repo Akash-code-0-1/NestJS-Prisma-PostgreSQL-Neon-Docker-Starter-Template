@@ -1,10 +1,19 @@
-import {
-  BundleScheduleType,
-  BundleCategory,
-  BundlePriceType,
-} from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+export enum BundleScheduleType {
+  BOOKED_IN_SEQUENCE = 'BOOKED_IN_SEQUENCE',
+  BOOKED_IN_PARALLEL = 'BOOKED_IN_PARALLEL',
+}
 
+export enum BundlePriceType {
+  REGULAR = 'REGULAR',
+  PROMOTION = 'PROMOTION',
+}
+
+export enum BundleCategory {
+  FIXED = 'FIXED',
+  PERCENTAGE_DISCOUNT = 'PERCENTAGE_DISCOUNT',
+}
+
+// Optional: replace Prisma Decimal with number (safer for API layer)
 export class BundleEntity {
   id: string;
   salonId: string;
@@ -12,7 +21,7 @@ export class BundleEntity {
   category: BundleCategory;
   description: string | null;
   priceType: BundlePriceType;
-  price: Decimal;
+  price: number;
   duration: number;
   scheduleType: BundleScheduleType;
   addToOnlineBook: boolean;
@@ -29,4 +38,3 @@ export class BundleEntity {
     Object.assign(this, partial);
   }
 }
-export { BundleCategory, BundleScheduleType, BundlePriceType };
