@@ -10,13 +10,13 @@ import { OwnerAuthModule } from './modules/iam/auth/salon-owners/salonOwner-auth
 import { EmployeeAuthModule } from './modules/iam/auth/employee/employee.module';
 import { ClientAuthModule } from './modules/iam/auth/client/client-auth.module';
 import { ServicesModule } from './modules/tenancy/salons/services/services.module';
-import { TestimonialModule } from './modules/tenancy/salons/testimonials/testimonial.module';
+import { TestimonialModule } from './modules/tenancy/crm/testimonials/testimonial.module';
 import { EmployeeManagementModule } from './modules/tenancy/salons/employee-management/employee-management.module';
 import { AppointmentModule } from './modules/tenancy/appointments/appointment.module';
 import { VoucherModule } from './modules/tenancy/create-voucher/create-voucher.module';
-import { BuyVoucherModule } from './modules/tenancy/buy_voucher/buy-voucher.module';
-import { ContactModule } from './modules/tenancy/contact/contact.module';
-import { ReceiptsModule } from './modules/finance/receipts/receipt.module';
+import { BuyVoucherModule } from './modules/tenancy/finance/buy_voucher/buy-voucher.module';
+import { ContactModule } from './modules/tenancy/crm/contact/contact.module';
+import { ReceiptsModule } from './modules/tenancy/finance/receipts/receipt.module';
 import { BundleModule } from './modules/tenancy/salons/bundle-management/bundle.module';
 @Module({
   imports: [

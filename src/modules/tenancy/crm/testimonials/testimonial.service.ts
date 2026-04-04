@@ -7,7 +7,7 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { PrismaService } from '../../../../core//prisma/prisma.service';
+import { PrismaService } from '../../../../core/prisma/prisma.service';
 import { RedisService } from '../../../../core/redis/redis.service';
 
 import { CreateTestimonialDto } from './dto/create-testimonial.dto';

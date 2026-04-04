@@ -1,6 +1,6 @@
 import { HttpException, Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../core/prisma/prisma.service';
-import { RedisService } from '../../../core/redis/redis.service';
+import { PrismaService } from '../../../../core/prisma/prisma.service';
+import { RedisService } from '../../../../core/redis/redis.service';
 import { BuyVoucherDto } from './dto/buy-voucher.dto';
 import { randomUUID } from 'crypto';
 

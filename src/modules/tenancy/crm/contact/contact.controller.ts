@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { ContactService } from './contact.service';
 import { CreateContactDto } from './dto/contact.dto';
-import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard'; // 👈 Update path
+import { JwtAuthGuard } from '../../../../core/guards/jwt-auth.guard'; // 👈 Update path
 
 @Controller('salons/:salonId/contact')
 export class ContactController {

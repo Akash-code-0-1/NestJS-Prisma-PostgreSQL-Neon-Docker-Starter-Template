@@ -146,64 +146,6 @@ export class ServicesService {
     return { message: 'Service deleted successfully' };
   }
 
-  // ✅ Search with pagination, sorting, multi-category, Redis caching
-  // async searchServices(
-  //   salonId: string,
-  //   search?: string,
-  //   page = 1,
-  //   limit = 10,
-  //   sortBy: string = 'createdAt',
-  //   order: 'asc' | 'desc' = 'desc',
-  //   categories?: string[], // multiple categories
-  // ) {
-  //   const skip = (page - 1) * limit;
-
-  //   const allowedSortFields = ['createdAt', 'price', 'duration', 'serviceName'];
-  //   const safeSortBy = allowedSortFields.includes(sortBy)
-  //     ? sortBy
-  //     : 'createdAt';
-  //   const safeOrder: 'asc' | 'desc' = order === 'asc' ? 'asc' : 'desc';
-
-  //   const key = `${SERVICE_CACHE_PREFIX}:${salonId}:search:${search || 'all'}:categories:${categories?.join('|') || 'all'}:page:${page}:limit:${limit}:sort:${safeSortBy}:${safeOrder}`;
-
-  //   const cached = await this.redis.get(key);
-  //   if (cached) return JSON.parse(cached as string);
-
-  //   const whereCondition: any = { salonId };
-  //   if (search)
-  //     whereCondition.serviceName = { contains: search, mode: 'insensitive' };
-  //   if (categories?.length) whereCondition.categories = { hasSome: categories };
-
-  //   const [services, total] = await Promise.all([
-  //     this.prisma.service.findMany({
-  //       where: whereCondition,
-  //       skip,
-  //       take: limit,
-  //       orderBy: { [safeSortBy]: safeOrder },
-  //       include: {
-  //         employees: { include: { employee: { include: { user: true } } } },
-  //       },
-  //     }),
-  //     this.prisma.service.count({ where: whereCondition }),
-  //   ]);
-
-  //   const result = {
-  //     data: services,
-  //     meta: {
-  //       total,
-  //       page,
-  //       limit,
-  //       totalPages: Math.ceil(total / limit),
-  //       sortBy: safeSortBy,
-  //       order: safeOrder,
-  //       categories: categories || null,
-  //     },
-  //   };
-
-  //   await this.redis.set(key, JSON.stringify(result), 60);
-  //   return result;
-  // }
-
   async searchServices(
     salonId: string,
     search?: string,

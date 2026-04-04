@@ -12,9 +12,9 @@ import {
 } from '@nestjs/common';
 import { ReceiptsService } from './receipt.service';
 import { CreateReceiptDto } from './dto/receipt.dto';
-import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard';
-import { RolesGuard } from '../../../core/guards/roles.guard';
-import { Roles } from '../../../core/decorators/roles.decorators';
+import { JwtAuthGuard } from '../../../../core/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../../core/guards/roles.guard';
+import { Roles } from '../../../../core/decorators/roles.decorators';
 
 @Controller('salons/:salonId/receipts')
 @UseGuards(JwtAuthGuard, RolesGuard)
