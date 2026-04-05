@@ -68,91 +68,94 @@ The server will be available at `http://localhost:3000`
 | `npm run lint` | Run ESLint and fix issues |
 | `npm run format` | Format code with Prettier |
 | `npm test` | Run unit tests |
-| `npm run test:watch` | Run tests in watch mode |
-| `npm run test:cov` | Generate test coverage report |
+| `-+-+-+-+-+-+-+-+-+-+-+` | `npm run test:watch` | Run tests in watch mode |
+| `npm run test:cov` | Run tests with coverage report |
 | `npm run test:e2e` | Run end-to-end tests |
 
 ## 🏗️ Project Structure
+
+The project follows a modular architecture with NestJS, separating concerns into core modules, feature modules, and utilities.
+
 ```
 domenico-backend/
 ├── src/
-│   ├── app.module.ts
-│   ├── main.ts
-│   ├── bootstrap/
+│   ├── app.module.ts                 # Root application module
+│   ├── main.ts                       # Application entry point
+│   ├── bootstrap/                    # Application bootstrap utilities
 │   │   ├── bootstrap.module.ts
 │   │   └── bootstrap.service.ts
-│   ├── config/
+│   ├── config/                       # Configuration modules
 │   │   ├── app.config.ts
 │   │   ├── database.config.ts
 │   │   ├── env.config.ts
 │   │   ├── redis.config.ts
 │   │   └── swagger.config.ts
-│   ├── core/
-│   │   ├── cache/
+│   ├── core/                         # Shared core modules and utilities
+│   │   ├── cache/                    # Redis caching
 │   │   │   ├── cache.module.ts
 │   │   │   ├── cache.service.ts
 │   │   │   └── cache.decorator.ts
-│   │   ├── constants/
+│   │   ├── constants/                # Application constants
 │   │   │   ├── app.constants.ts
 │   │   │   ├── messages.constants.ts
 │   │   │   └── regex.constants.ts
-│   │   ├── decorators/
+│   │   ├── decorators/               # Custom decorators
 │   │   │   ├── current-user.decorator.ts
 │   │   │   ├── roles.decorator.ts
 │   │   │   ├── public.decorator.ts
 │   │   │   └── request-id.decorator.ts
-│   │   ├── filters/
+│   │   ├── filters/                  # Exception filters
 │   │   │   ├── http-exception.filter.ts
 │   │   │   ├── prisma-exception.filter.ts
 │   │   │   └── global-exception.filter.ts
-│   │   ├── guards/
+│   │   ├── guards/                   # Authentication and authorization guards
 │   │   │   ├── jwt-auth.guard.ts
 │   │   │   ├── jwt-refresh.guard.ts
 │   │   │   ├── roles.guard.ts
 │   │   │   ├── throttle.guard.ts
 │   │   │   └── optional-jwt.guard.ts
-│   │   ├── interceptors/
+│   │   ├── interceptors/             # Request/response interceptors
 │   │   │   ├── logging.interceptor.ts
 │   │   │   ├── response.interceptor.ts
 │   │   │   ├── request-id.interceptor.ts
 │   │   │   └── transform.interceptor.ts
-│   │   ├── logger/
+│   │   ├── logger/                   # Logging with Winston
 │   │   │   ├── logger.module.ts
 │   │   │   ├── logger.service.ts
 │   │   │   └── winston.config.ts
-│   │   ├── metrics/
+│   │   ├── metrics/                  # Performance metrics with Prometheus
 │   │   │   ├── metrics.module.ts
 │   │   │   ├── metrics.service.ts
 │   │   │   └── prometheus.config.ts
-│   │   ├── middleware/
+│   │   ├── middleware/               # Custom middleware
 │   │   │   ├── request-id.middleware.ts
 │   │   │   ├── cors.middleware.ts
 │   │   │   └── helmet.middleware.ts
-│   │   ├── prisma/
+│   │   ├── prisma/                   # Database ORM with Prisma
 │   │   │   ├── prisma.module.ts
 │   │   │   ├── prisma.service.ts
 │   │   │   └── prisma.extension.ts
-│   │   ├── redis/
+│   │   ├── redis/                    # Redis integration
 │   │   │   ├── redis.module.ts
 │   │   │   ├── redis.service.ts
 │   │   │   └── redis.provider.ts
-│   │   └── utils/
+│   │   └── utils/                    # Utility functions
 │   │       ├── crypto.util.ts
 │   │       ├── date.util.ts
 │   │       ├── pagination.util.ts
 │   │       ├── response.util.ts
 │   │       └── validators.util.ts
-│   ├── health/
+│   ├── health/                       # Health checks
 │   │   ├── health.module.ts
 │   │   ├── health.controller.ts
 │   │   └── health.service.ts
-│   ├── jobs/
+│   ├── jobs/                         # Background jobs
 │   │   ├── jobs.module.ts
 │   │   ├── appointment-reminder.job.ts
 │   │   ├── cleanup.job.ts
 │   │   └── email-notification.job.ts
-│   └── modules/
-│       ├── analytics/
+│   └── modules/                      # Feature-specific modules
+│       ├── analytics/                # Analytics and reporting
 │       │   ├── analytics.module.ts
 │       │   ├── analytics.controller.ts
 │       │   ├── analytics.service.ts
@@ -160,7 +163,7 @@ domenico-backend/
 │       │   │   └── analytics-query.dto.ts
 │       │   └── entities/
 │       │       └── analytics.entity.ts
-│       ├── automations/
+│       ├── automations/              # Automated workflows
 │       │   ├── automations.module.ts
 │       │   ├── automations.controller.ts
 │       │   ├── automations.service.ts
@@ -169,7 +172,7 @@ domenico-backend/
 │       │   │   └── update-automation.dto.ts
 │       │   └── entities/
 │       │       └── automation.entity.ts
-│       ├── crm/
+│       ├── crm/                      # Customer Relationship Management
 │       │   ├── crm.module.ts
 │       │   ├── crm.controller.ts
 │       │   ├── crm.service.ts
@@ -177,11 +180,11 @@ domenico-backend/
 │       │   │   └── crm-query.dto.ts
 │       │   └── entities/
 │       │       └── crm.entity.ts
-│       ├── finance/
+│       ├── finance/                  # Financial management
 │       │   ├── finance.module.ts
 │       │   ├── finance.controller.ts
 │       │   ├── finance.service.ts
-│       │   ├── receipts/
+│       │   ├── receipts/             # Receipt handling
 │       │   │   ├── receipts.controller.ts
 │       │   │   ├── receipts.service.ts
 │       │   │   ├── dto/
@@ -189,14 +192,14 @@ domenico-backend/
 │       │   │   │   └── update-receipt.dto.ts
 │       │   │   └── entities/
 │       │   │       └── receipt.entity.ts
-│       │   └── transactions/
+│       │   └── transactions/         # Transaction management
 │       │       ├── transactions.controller.ts
 │       │       ├── transactions.service.ts
 │       │       └── entities/
 │       │           └── transaction.entity.ts
-│       ├── iam/
+│       ├── iam/                      # Identity and Access Management
 │       │   ├── iam.module.ts
-│       │   ├── auth/
+│       │   ├── auth/                 # Authentication
 │       │   │   ├── auth.controller.ts
 │       │   │   ├── auth.service.ts
 │       │   │   ├── dto/
@@ -204,29 +207,13 @@ domenico-backend/
 │       │   │   │   ├── register.dto.ts
 │       │   │   │   ├── refresh-token.dto.ts
 │       │   │   │   └── change-password.dto.ts
-│       │   │   ├── strategies/
+│       │   │   ├── strategies/       # Passport strategies
 │       │   │   │   ├── jwt.strategy.ts
 │       │   │   │   ├── jwt-refresh.strategy.ts
 │       │   │   │   └── local.strategy.ts
 │       │   │   └── entities/
 │       │   │       └── auth.entity.ts
-│       │   ├── permissions/
-│       │   │   ├── permissions.controller.ts
-│       │   │   ├── permissions.service.ts
-│       │   │   ├── dto/
-│       │   │   │   ├── create-permission.dto.ts
-│       │   │   │   └── update-permission.dto.ts
-│       │   │   └── entities/
-│       │   │       └── permission.entity.ts
-│       │   └── roles/
-│       │       ├── roles.controller.ts
-│       │       ├── roles.service.ts
-│       │       ├── dto/
-│       │       │   ├── create-role.dto.ts
-│       │       │   └── update-role.dto.ts
-│       │       └── entities/
-│       │           └── role.entity.ts
-│       ├── settings/
+│       ├── settings/                # Application settings
 │       │   ├── settings.module.ts
 │       │   ├── settings.controller.ts
 │       │   ├── settings.service.ts
@@ -234,7 +221,7 @@ domenico-backend/
 │       │   │   └── update-settings.dto.ts
 │       │   └── entities/
 │       │       └── setting.entity.ts
-│       ├── support/
+│       ├── support/                 # Support and feedback
 │       │   ├── support.module.ts
 │       │   ├── support.controller.ts
 │       │   ├── support.service.ts
@@ -244,9 +231,9 @@ domenico-backend/
 │       │   └── entities/
 │       │       ├── contact.entity.ts
 │       │       └── feedback.entity.ts
-│       └── tenancy/
+│       └── tenancy/                 # Multi-tenant salon management
 │           ├── tenancy.module.ts
-│           ├── appointments/
+│           ├── appointments/         # Appointment scheduling
 │           │   ├── appointments.controller.ts
 │           │   ├── appointments.service.ts
 │           │   ├── dto/
@@ -254,14 +241,14 @@ domenico-backend/
 │           │   │   └── update-appointment.dto.ts
 │           │   └── entities/
 │           │       └── appointment.entity.ts
-│           ├── buy-voucher/
+│           ├── buy-voucher/          # Voucher purchasing
 │           │   ├── buy-voucher.controller.ts
 │           │   ├── buy-voucher.service.ts
 │           │   ├── dto/
 │           │   │   └── buy-voucher.dto.ts
 │           │   └── entities/
 │           │       └── voucher-purchase.entity.ts
-│           ├── contact/
+│           ├── contact/              # Contact management
 │           │   ├── contact.controller.ts
 │           │   ├── contact.service.ts
 │           │   ├── dto/
@@ -269,7 +256,7 @@ domenico-backend/
 │           │   │   └── update-contact.dto.ts
 │           │   └── entities/
 │           │       └── contact.entity.ts
-│           ├── create-voucher/
+│           ├── create-voucher/       # Voucher creation
 │           │   ├── create-voucher.controller.ts
 │           │   ├── create-voucher.service.ts
 │           │   ├── dto/
@@ -277,7 +264,7 @@ domenico-backend/
 │           │   │   └── update-voucher.dto.ts
 │           │   └── entities/
 │           │       └── voucher.entity.ts
-│           ├── invitations/
+│           ├── invitations/          # Invitation system
 │           │   ├── invitations.controller.ts
 │           │   ├── invitations.service.ts
 │           │   ├── dto/
@@ -285,7 +272,7 @@ domenico-backend/
 │           │   │   └── accept-invitation.dto.ts
 │           │   └── entities/
 │           │       └── invitation.entity.ts
-│           ├── salon-users/
+│           ├── salon-users/          # Salon staff management
 │           │   ├── salon-users.controller.ts
 │           │   ├── salon-users.service.ts
 │           │   ├── dto/
@@ -293,7 +280,7 @@ domenico-backend/
 │           │   │   └── update-salon-user.dto.ts
 │           │   └── entities/
 │           │       └── salon-user.entity.ts
-│           └── salons/
+│           └── salons/               # Salon business management
 │               ├── salons.controller.ts
 │               ├── salons.service.ts
 │               ├── dto/
@@ -301,7 +288,7 @@ domenico-backend/
 │               │   └── update-salon.dto.ts
 │               └── entities/
 │                   └── salon.entity.ts
-├── test/
+├── test/                            # Testing suite
 │   ├── app.e2e-spec.ts
 │   ├── auth.e2e-spec.ts
 │   ├── appointments.e2e-spec.ts
@@ -310,25 +297,26 @@ domenico-backend/
 │       ├── users.fixture.ts
 │       ├── salons.fixture.ts
 │       └── appointments.fixture.ts
-├── prisma/
+├── prisma/                          # Database schema and migrations
 │   ├── schema.prisma
 │   └── migrations/
 │       └── [migration_folders]/
-├── docker/
+├── docker/                          # Docker configurations
 │   ├── Dockerfile
 │   ├── Dockerfile.prod
 │   └── .dockerignore
-├── .env.example
-├── .eslintrc.js
-├── .prettierrc
-├── docker-compose.yml
-├── docker-compose.prod.yml
-├── jest.config.js
-├── package.json
-├── tsconfig.json
-├── README.md
-└── .gitignore
+├── .env.example                     # Environment variables template
+├── .eslintrc.js                     # ESLint configuration
+├── .prettierrc                      # Prettier configuration
+├── docker-compose.yml               # Development Docker Compose
+├── docker-compose.prod.yml          # Production Docker Compose
+├── jest.config.js                   # Jest configuration
+├── package.json                     # NPM dependencies and scripts
+├── tsconfig.json                    # TypeScript configuration
+├── README.md                        # This file
+└── .gitignore                       # Git ignore rules
 ```
+
 ## 🔐 Key Features
 
 ### Authentication & Authorization
