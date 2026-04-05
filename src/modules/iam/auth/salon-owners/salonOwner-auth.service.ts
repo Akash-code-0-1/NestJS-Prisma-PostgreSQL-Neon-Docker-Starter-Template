@@ -7,7 +7,7 @@ import { PrismaService } from '../../../../core/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { RedisService } from '../../../../core/redis/redis.service';
-import { SetOwnerPasswordDto } from './dto/set-owner-password.dto';
+// import { SetOwnerPasswordDto } from './dto/set-owner-password.dto';
 import { CreateSalonOwnerDto } from './dto/create-salon-owner.dto';
 
 @Injectable()
