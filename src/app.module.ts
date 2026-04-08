@@ -19,6 +19,8 @@ import { ContactModule } from './modules/tenancy/crm/contact/contact.module';
 import { ReceiptsModule } from './modules/tenancy/finance/receipts/receipt.module';
 import { BundleModule } from './modules/tenancy/salons/bundle-management/bundle.module';
 import { RemunerationModule } from './modules/tenancy/finance/remuneration/remuneration.module';
+import { SalonOwnerAnalyticsModule } from './modules/tenancy/analytics/salonOwnerAnalytics/salonowner-analytics.module';
+import { ShiftModule } from './modules/tenancy/salons/shift-management/shift.module';
 @Module({
   imports: [
     ThrottlerModule.forRoot([
@@ -46,6 +48,8 @@ import { RemunerationModule } from './modules/tenancy/finance/remuneration/remun
     ReceiptsModule,
     BundleModule,
     RemunerationModule,
+    SalonOwnerAnalyticsModule,
+    ShiftModule,
   ],
 })
 export class AppModule {}

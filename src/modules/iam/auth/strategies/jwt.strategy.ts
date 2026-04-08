@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/require-await */
 import { Injectable, UnauthorizedException } from '@nestjs/common';
@@ -12,23 +13,26 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new Error('JWT_ACCESS_SECRET is not defined in .env');
     }
 
-    // Define options explicitly
     const options: StrategyOptions = {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       secretOrKey: secret,
-      ignoreExpiration: false, // fail if token expired
+      ignoreExpiration: false,
     };
 
     super(options);
   }
 
-  // `payload` is whatever you signed in JWT (sub, email, role)
+  // payload
   async validate(payload: any) {
     if (!payload || !payload.sub) {
       throw new UnauthorizedException('Invalid token payload');
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    return payload; // injected into req.user
+    return {
+      id: payload.sub,
+      email: payload.email,
+      role: payload.role,
+      salonId: payload.salonId,
+    };
   }
 }

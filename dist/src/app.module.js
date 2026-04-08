@@ -27,6 +27,8 @@ const contact_module_1 = require("./modules/tenancy/crm/contact/contact.module")
 const receipt_module_1 = require("./modules/tenancy/finance/receipts/receipt.module");
 const bundle_module_1 = require("./modules/tenancy/salons/bundle-management/bundle.module");
 const remuneration_module_1 = require("./modules/tenancy/finance/remuneration/remuneration.module");
+const salonowner_analytics_module_1 = require("./modules/tenancy/analytics/salonOwnerAnalytics/salonowner-analytics.module");
+const shift_module_1 = require("./modules/tenancy/salons/shift-management/shift.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -57,6 +59,8 @@ exports.AppModule = AppModule = __decorate([
             receipt_module_1.ReceiptsModule,
             bundle_module_1.BundleModule,
             remuneration_module_1.RemunerationModule,
+            salonowner_analytics_module_1.SalonOwnerAnalyticsModule,
+            shift_module_1.ShiftModule,
         ],
     })
 ], AppModule);

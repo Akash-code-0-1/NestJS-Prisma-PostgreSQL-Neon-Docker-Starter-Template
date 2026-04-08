@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   Controller,
   Post,
@@ -10,7 +12,7 @@ import {
 import { SalonOwnerAuthService } from './salonOwner-auth.service';
 import { SetOwnerPasswordDto } from './dto/set-owner-password.dto';
 import { LoginSalonOwnerDto } from './dto/login-salonOwner.dto';
-import { LogoutOwnerDto } from './dto/logout-salonOwner.dto';
+// import { LogoutOwnerDto } from './dto/logout-salonOwner.dto';
 import { CreateSalonOwnerDto } from './dto/create-salon-owner.dto';
 import { JwtAuthGuard } from '../../../../core/guards/jwt-auth.guard';
 
@@ -45,8 +47,6 @@ export class SalonOwnerAuthController {
   @UseGuards(JwtAuthGuard)
   @Post('logout')
   async logout(@Req() req: any) {
-    // Extract userId from JWT payload, try both 'id' and 'sub'
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const userId = req.user?.id ?? req.user?.sub;
 
     if (!userId) {

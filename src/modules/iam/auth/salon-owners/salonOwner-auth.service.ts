@@ -7,7 +7,6 @@ import { PrismaService } from '../../../../core/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { RedisService } from '../../../../core/redis/redis.service';
-// import { SetOwnerPasswordDto } from './dto/set-owner-password.dto';
 import { CreateSalonOwnerDto } from './dto/create-salon-owner.dto';
 
 @Injectable()
@@ -68,6 +67,7 @@ export class SalonOwnerAuthService {
       sub: user.id,
       email: user.email,
       role: user.role,
+      salonId: salonId,
     };
 
     const accessToken = this.jwtService.sign(payload, {
@@ -104,9 +104,7 @@ export class SalonOwnerAuthService {
     };
   }
 
-  // Set password for Salon Owner
   async setPassword(ownerId: string, password: string) {
-    // Step 1: Find the salon owner's profile by ownerId
     const ownerProfile = await this.prisma.ownerProfile.findUnique({
       where: { id: ownerId },
       include: {
@@ -124,13 +122,9 @@ export class SalonOwnerAuthService {
       throw new NotFoundException('User associated with Salon Owner not found');
     }
 
-    //Hash the new password
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    //Ensure the role is set (if not already set)
     const role = user.role || 'SALON_OWNER';
 
-    //Update the user's password and role in the database
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
@@ -139,8 +133,13 @@ export class SalonOwnerAuthService {
       },
     });
 
-    //Create JWT access and refresh tokens
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      salonId: ownerProfile.salonId,
+    };
+
     const accessToken = this.jwtService.sign(payload, {
       secret: process.env.JWT_ACCESS_SECRET,
       expiresIn: '7d',
@@ -150,13 +149,11 @@ export class SalonOwnerAuthService {
       expiresIn: '7d',
     });
 
-    //Store the refresh token in the database (and also in Redis for session management)
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { refreshToken }, // Saved the refresh token in the database
+      data: { refreshToken },
     });
 
-    //Store tokens in Redis for session management
     await this.redisService.set(
       `auth:${user.id}:access`,
       accessToken,
@@ -168,13 +165,11 @@ export class SalonOwnerAuthService {
       60 * 60 * 24 * 7,
     );
 
-    //Optionally, update the invitationSent flag for the owner
     await this.prisma.ownerProfile.update({
       where: { id: ownerId },
       data: { invitationSent: true },
     });
 
-    //Return the tokens in the response
     return {
       message: 'Password set successfully',
       accessToken,
@@ -182,17 +177,16 @@ export class SalonOwnerAuthService {
     };
   }
 
-  // Owner login
   async login(email: string, password: string) {
     const salonOwner = await this.prisma.user.findUnique({
       where: { email },
+      include: { ownerProfile: true },
     });
 
     if (!salonOwner || salonOwner.role !== 'SALON_OWNER') {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Check if password exists
     if (!salonOwner.password) {
       throw new UnauthorizedException(
         'Password not set. Check invitation email.',
@@ -204,18 +198,18 @@ export class SalonOwnerAuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Set isActive to true when the owner logs in
     await this.prisma.user.update({
       where: { id: salonOwner.id },
       data: { isActive: true },
     });
 
-    // Create JWT tokens
     const payload = {
       sub: salonOwner.id,
       email: salonOwner.email,
       role: salonOwner.role,
+      salonId: salonOwner.ownerProfile?.salonId,
     };
+
     const accessToken = this.jwtService.sign(payload, {
       secret: process.env.JWT_ACCESS_SECRET,
       expiresIn: '7d',
@@ -225,13 +219,11 @@ export class SalonOwnerAuthService {
       expiresIn: '7d',
     });
 
-    //Update refreshToken in database (if necessary)
     await this.prisma.user.update({
       where: { id: salonOwner.id },
-      data: { refreshToken }, // Save the refresh token in the database
+      data: { refreshToken },
     });
 
-    //Store tokens in Redis for session management
     await this.redisService.set(
       `auth:${salonOwner.id}:access`,
       accessToken,
@@ -250,14 +242,15 @@ export class SalonOwnerAuthService {
         id: salonOwner.id,
         email: salonOwner.email,
         role: salonOwner.role,
+        salonId: salonOwner.ownerProfile?.salonId,
       },
     };
   }
 
-  // Refresh tokens - Generate new access token using refresh token
   async refreshTokens(ownerId: string, refreshToken: string) {
     const salonOwner = await this.prisma.user.findUnique({
       where: { id: ownerId },
+      include: { ownerProfile: true },
     });
 
     if (!salonOwner) {
@@ -273,13 +266,14 @@ export class SalonOwnerAuthService {
       sub: salonOwner.id,
       email: salonOwner.email,
       role: salonOwner.role,
+      salonId: salonOwner.ownerProfile?.salonId,
     };
+
     const accessToken = this.jwtService.sign(payload, {
       secret: process.env.JWT_ACCESS_SECRET,
       expiresIn: '7d',
     });
 
-    // Store new access token in Redis
     await this.redisService.set(
       `auth:${ownerId}:access`,
       accessToken,
@@ -292,15 +286,12 @@ export class SalonOwnerAuthService {
     };
   }
 
-  // Logout - Remove session tokens from Redis
   async logout(ownerId: string) {
-    // Set isActive to false when the owner logs out
     await this.prisma.user.update({
       where: { id: ownerId },
       data: { isActive: false },
     });
 
-    // Remove tokens from Redis
     await this.redisService.delete(`auth:${ownerId}:access`);
     await this.redisService.delete(`auth:${ownerId}:refresh`);
 
