@@ -30,9 +30,8 @@ export class SalonOwnerAnalyticsController {
     private readonly prisma: PrismaService,
   ) {}
 
-  /**
-   * Helper to ensure we are always scoped to the correct Salon
-   */
+  //Helper to ensure we are always scoped to the correct Salon
+
   private async getSalonId(req: RequestWithUser): Promise<string> {
     const salonIdFromToken = req.user?.salonId;
     if (salonIdFromToken) return salonIdFromToken;
@@ -61,7 +60,6 @@ export class SalonOwnerAnalyticsController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    // getSalonId helper logic goes here as previously defined
     const salonId = await this.getSalonId(req);
 
     return this.analyticsService.getActivityTabAnalytics(

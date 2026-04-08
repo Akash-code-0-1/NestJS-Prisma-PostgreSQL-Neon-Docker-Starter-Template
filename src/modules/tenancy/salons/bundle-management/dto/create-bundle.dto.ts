@@ -9,7 +9,6 @@ import {
   Min,
 } from 'class-validator';
 
-// ✅ reuse SAME enums (no duplication across files ideally)
 export enum BundleScheduleType {
   BOOKED_IN_SEQUENCE = 'BOOKED_IN_SEQUENCE',
   BOOKED_IN_PARALLEL = 'BOOKED_IN_PARALLEL',

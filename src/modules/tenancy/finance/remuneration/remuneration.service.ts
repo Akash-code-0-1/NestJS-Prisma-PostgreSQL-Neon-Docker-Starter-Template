@@ -208,7 +208,6 @@ export class RemunerationService {
 
     const cacheKey = `${this.CACHE_PREFIX}:payments-per-year:${salonId}:${employeeId}:${page}:${limit}`;
 
-    // Check Redis cache first
     const cachedData = await this.redis.get(cacheKey);
     if (cachedData) {
       return JSON.parse(cachedData) as {
@@ -226,7 +225,6 @@ export class RemunerationService {
       };
     }
 
-    // Query to get total years count
     const totalYearsResult = await this.prisma.$queryRaw<
       Array<{ count: number }>
     >`
@@ -241,7 +239,6 @@ export class RemunerationService {
     `;
     const total = totalYearsResult[0]?.count ?? 0;
 
-    // Query to fetch year-wise payments data
     const data = await this.prisma.$queryRaw<
       Array<{
         year: number;
@@ -262,7 +259,6 @@ export class RemunerationService {
       LIMIT ${Number(limit)} 
     `;
 
-    // Prepare final result
     const result = {
       data: data.map((item) => ({
         year: Number(item.year),
@@ -270,19 +266,18 @@ export class RemunerationService {
         monthlyMean: Number(item.monthlyMean),
       })),
       meta: {
-        page: Number(page), // ensure page is a number
-        limit: Number(limit), // ensure limit is a number
+        page: Number(page),
+        limit: Number(limit),
         total,
         totalPages: Math.ceil(total / limit),
       },
     };
 
-    // Set result in Redis cache
     await this.redis.set(
       cacheKey,
       JSON.stringify(result),
       'EX',
-      REDIS_DEFAULT_TTL, // Cache time to live
+      REDIS_DEFAULT_TTL,
     );
 
     return result;

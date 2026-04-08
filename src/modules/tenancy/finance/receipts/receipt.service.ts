@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/no-base-to-string */
+/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
@@ -20,9 +19,6 @@ export class ReceiptsService {
     private readonly redisService: RedisService,
   ) {}
 
-  /**
-   * Generates a unique cache key based on salon and filter parameters
-   */
   private getCacheKey(salonId: string, query: any) {
     const {
       page = 1,
@@ -55,7 +51,6 @@ export class ReceiptsService {
   async create(salonId: string, dto: CreateReceiptDto) {
     try {
       const result = await this.prisma.$transaction(async (tx) => {
-        // 1. Professional Numbering Logic (Year-Number)
         const currentYear = new Date().getFullYear();
         const lastReceipt = await tx.receipt.findFirst({
           where: {
@@ -74,7 +69,6 @@ export class ReceiptsService {
 
         const finalReceiptNumber = `${currentYear}-${nextNum}`;
 
-        // 2. Calculation Logic
         const subTotal = dto.items.reduce(
           (acc, i) => acc + Number(i.unitPrice) * Number(i.quantity),
           0,
@@ -114,21 +108,12 @@ export class ReceiptsService {
           include: { items: true },
         });
 
-        // // 3. Link Appointment Status
-        // if (dto.appointmentId) {
-        //   await tx.appointment.update({
-        //     where: { id: dto.appointmentId },
-        //     data: { status: 'COMPLETED' as any },
-        //   });
-        // }
-
         if (dto.appointmentId) {
           await tx.appointment.update({
             where: { id: dto.appointmentId },
             data: { status: 'COMPLETED' as any },
           });
 
-          // LOG: Payment Completed
           await this.log(
             tx,
             dto.appointmentId,
@@ -137,7 +122,6 @@ export class ReceiptsService {
             dto.userId,
           );
 
-          // LOG: Receipt Generated
           await this.log(
             tx,
             dto.appointmentId,
@@ -150,7 +134,6 @@ export class ReceiptsService {
         return receipt;
       });
 
-      // Clear cache for this salon so the new receipt shows up immediately
       await this.redisService.flushByPrefix(
         `${RECEIPT_CACHE_PREFIX}:${salonId}`,
       );
@@ -167,16 +150,13 @@ export class ReceiptsService {
   async findAll(salonId: string, query: any) {
     const cacheKey = this.getCacheKey(salonId, query);
 
-    // REDIS GET
     const cached = await this.redisService.get(cacheKey);
     if (cached) return typeof cached === 'string' ? JSON.parse(cached) : cached;
 
     const { page = 1, limit = 10, search, status, method, dateRange } = query;
     const where: any = { salonId, deletedAt: null };
 
-    // Filter Logic
     if (status && status !== 'All') {
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
       where.status = status.toUpperCase() as any;
     }
 
@@ -188,7 +168,6 @@ export class ReceiptsService {
         'Online P.': 'GOOGLE_PAY',
         'Apple Pay': 'APPLE_PAY',
       };
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
       where.method = (methodMap[method] || method) as any;
     }
 
@@ -210,7 +189,6 @@ export class ReceiptsService {
       ];
     }
 
-    // DATABASE OPTIMIZATION: Promise.all replaces $transaction for speed
     const [total, receipts] = await Promise.all([
       this.prisma.receipt.count({ where }),
       this.prisma.receipt.findMany({
@@ -232,7 +210,6 @@ export class ReceiptsService {
       },
     };
 
-    // REDIS SET
     await this.redisService.set(cacheKey, res, 3600);
     return res;
   }
@@ -255,7 +232,6 @@ export class ReceiptsService {
     if (!receipt)
       throw new HttpException('Receipt not found', HttpStatus.NOT_FOUND);
 
-    // VAT Summary grouping for the "Electronic Invoice" table
     const vatSummary = receipt.items.reduce((acc, item) => {
       const rate = Number(item.vatRate);
       const taxable = Number(item.unitPrice) * item.quantity;

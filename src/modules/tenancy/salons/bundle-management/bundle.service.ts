@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 /* eslint-disable @typescript-eslint/no-base-to-string */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
@@ -43,7 +44,6 @@ export class BundlesService {
           salonId,
           name: dto.name,
 
-          // ✅ CAST TO PRISMA TYPE USING DTO ENUM
           category: dto.category as any,
           priceType: dto.priceType as any,
           scheduleType: dto.scheduleType as any,
@@ -88,7 +88,6 @@ export class BundlesService {
     }
 
     if (category) {
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
       where.category = category as any;
     }
 

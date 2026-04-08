@@ -17,12 +17,10 @@ export class RedisCacheInterceptor implements NestInterceptor {
     const key = `cache:${req.url}`;
 
     return new Observable((subscriber) => {
-      // Explicitly tell TS that cached is string | null
       this.redis
         .get(key)
         .then((cached: string | null) => {
           if (cached) {
-            // Safe JSON.parse because cached is string
             subscriber.next(JSON.parse(cached));
             subscriber.complete();
           } else {
@@ -30,7 +28,6 @@ export class RedisCacheInterceptor implements NestInterceptor {
               .handle()
               .pipe(
                 tap((data) => {
-                  // Fire-and-forget async call (don't await in tap)
                   this.redis
                     .set(key, JSON.stringify(data), 60)
                     .catch((err: unknown) => {
@@ -47,7 +44,6 @@ export class RedisCacheInterceptor implements NestInterceptor {
         })
         .catch((err: unknown) => {
           console.error('Redis get error:', err);
-          // fallback: continue without cache
           next.handle().subscribe({
             next: (data) => subscriber.next(data),
             error: (err) => subscriber.error(err),

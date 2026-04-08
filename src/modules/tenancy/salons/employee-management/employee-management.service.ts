@@ -1,3 +1,4 @@
+/* eslint-disable no-empty */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
@@ -24,7 +25,6 @@ export class EmployeeManagementService {
     private redis: RedisService,
   ) {}
 
-  // --- LIST EMPLOYEES ---
   async getEmployees(query: FilterEmployeeDto) {
     const {
       page = 1,
@@ -64,7 +64,6 @@ export class EmployeeManagementService {
     };
   }
 
-  // --- GET PROFILE (Includes New TimeOff & Manager Relations) ---
   async getMemberProfile(id: string, query: MemberProfileQueryDto) {
     const { servicePage = 1, serviceLimit = 5 } = query;
 
@@ -88,7 +87,6 @@ export class EmployeeManagementService {
     return employee;
   }
 
-  // --- UPDATE (Handles Language Table & Manager Link) ---
   async updateMember(id: string, dto: UpdateMemberDto) {
     await this.clearCache(id);
 
@@ -121,7 +119,6 @@ export class EmployeeManagementService {
         cap: dto.cap,
         certifications: dto.certifications,
         completedCourses: dto.completedCourses,
-        // FIXED: Use 'connect' for the relation to avoid TS2322 XOR error
         directManager: dto.directManagerId
           ? { connect: { id: dto.directManagerId } }
           : undefined,
@@ -141,7 +138,6 @@ export class EmployeeManagementService {
     });
   }
 
-  // --- ADD TIME OFF (Now saves to TimeOffRequest table) ---
   async addTimeOff(id: string, dto: TimeOffDto) {
     await this.clearCache(id);
 
@@ -168,7 +164,6 @@ export class EmployeeManagementService {
     return timeOff;
   }
 
-  // --- DROP-DOWN ACTIONS ---
   async performAction(id: string, dto: EmployeeActionDto) {
     await this.clearCache(id);
     const emp = await this.prisma.employeeProfile.findUnique({ where: { id } });
@@ -202,7 +197,6 @@ export class EmployeeManagementService {
   private async clearCache(id: string) {
     try {
       await this.redis.delete(`emp_prof:${id}:svc_p1`);
-      // eslint-disable-next-line no-empty
     } catch (e) {}
   }
 }

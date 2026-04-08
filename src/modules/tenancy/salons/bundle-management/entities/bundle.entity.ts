@@ -13,7 +13,6 @@ export enum BundleCategory {
   PERCENTAGE_DISCOUNT = 'PERCENTAGE_DISCOUNT',
 }
 
-// Optional: replace Prisma Decimal with number (safer for API layer)
 export class BundleEntity {
   id: string;
   salonId: string;

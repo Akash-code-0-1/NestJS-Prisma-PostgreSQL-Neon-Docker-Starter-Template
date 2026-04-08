@@ -40,7 +40,6 @@ export class SalonsService {
     return `${SALON_CACHE_PREFIX}:page:${page}:limit:${limit}:s:${search}:st:${status}:p:${plan}:c:${country}:pr:${province}:ct:${city}`;
   }
 
-  // ----------------- CREATE -----------------
   async create(dto: CreateSalonDto, currentUserId: string) {
     try {
       const existingSalon = await this.prisma.salon.findFirst({
@@ -54,7 +53,6 @@ export class SalonsService {
         );
       }
 
-      // Calculate trialEndsAt correctly
       const trialDays = Number(dto.trialPeriod);
       const trialEndsAt = !isNaN(trialDays)
         ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000)
@@ -75,9 +73,9 @@ export class SalonsService {
           status: 'TRIAL',
           plan: dto.initialPlan || 'BASIC',
           trialEndsAt,
-          createdBy: currentUserId, // Admin who created the salon
-          updatedBy: currentUserId, // Admin who created the salon (initially the same)
-          lastActiveAt: new Date(), // The salon's first active date
+          createdBy: currentUserId,
+          updatedBy: currentUserId,
+          lastActiveAt: new Date(),
           owners: {
             create: dto.owners.map((owner) => ({
               user: {
@@ -87,7 +85,7 @@ export class SalonsService {
                     firstName: owner.firstName,
                     lastName: owner.lastName,
                     email: owner.email,
-                    password: '', // password will be set later
+                    password: '',
                   },
                 },
               },
@@ -97,7 +95,6 @@ export class SalonsService {
         },
       });
 
-      // Clear cache related to the salon
       await this.redisService.flushByPrefix(SALON_CACHE_PREFIX);
 
       return salon;
@@ -120,7 +117,6 @@ export class SalonsService {
     currentUserRole: Role,
   ) {
     try {
-      // Fetch salon with owners included
       const salon = await this.prisma.salon.findUnique({
         where: { id },
         include: { owners: { include: { user: true } } },
@@ -130,7 +126,6 @@ export class SalonsService {
         throw new HttpException('Salon not found', HttpStatus.NOT_FOUND);
       }
 
-      // Ensure that the current user is authorized to update the salon
       const isOwner = salon.owners?.some(
         (owner) => owner.userId === currentUserId,
       );
@@ -142,7 +137,6 @@ export class SalonsService {
         );
       }
 
-      // Handle trialPeriod if provided
       let trialEndsAt = salon.trialEndsAt;
       if (data.trialPeriod) {
         const trialDays = Number(data.trialPeriod);
@@ -150,7 +144,6 @@ export class SalonsService {
           ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000)
           : salon.trialEndsAt;
       }
-      // Separate existing owners and new owners
       const existingOwners = data.owners?.filter((o: any) => o.id) || [];
       const newOwners = data.owners?.filter((o: any) => !o.id) || [];
 
@@ -201,7 +194,6 @@ export class SalonsService {
         },
       });
 
-      // Clear cache after update
       await this.redisService.flushByPrefix(SALON_CACHE_PREFIX);
 
       return updated;
@@ -211,7 +203,6 @@ export class SalonsService {
     }
   }
 
-  // ----------------- FIND ALL -----------------
   async findAll(filters: FilterSalonDto) {
     const {
       page = 1,
@@ -278,7 +269,6 @@ export class SalonsService {
     return response;
   }
 
-  // ----------------- SOFT DELETE -----------------
   async softDelete(id: string) {
     try {
       const deleted = await this.prisma.salon.update({
@@ -293,7 +283,6 @@ export class SalonsService {
     }
   }
 
-  // ----------------- FIND ONE -----------------
   async findOne(id: string) {
     const salon = await this.prisma.salon.findUnique({
       where: { id },
@@ -304,12 +293,10 @@ export class SalonsService {
     return salon;
   }
 
-  // ----------------- REMOVE (alias for softDelete) -----------------
   async remove(id: string) {
     return this.softDelete(id);
   }
 
-  // ----------------- HARD DELETE (DEV ONLY) -----------------
   async hardDelete(id: string) {
     try {
       const deleted = await this.prisma.salon.delete({

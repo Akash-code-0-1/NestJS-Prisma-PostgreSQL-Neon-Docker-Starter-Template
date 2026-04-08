@@ -4,7 +4,7 @@ import { SalonsController } from './salons.controller';
 import { PrismaModule } from '../../../core/prisma/prisma.module';
 import { JwtModule } from '@nestjs/jwt';
 import { RedisModule } from '../../../core/redis/redis.module';
-import {OwnerAuthModule} from '../../../modules/iam/auth/salon-owners/salonOwner-auth.module';
+import { OwnerAuthModule } from '../../../modules/iam/auth/salon-owners/salonOwner-auth.module';
 
 @Module({
   imports: [PrismaModule, RedisModule, OwnerAuthModule, JwtModule.register({})],

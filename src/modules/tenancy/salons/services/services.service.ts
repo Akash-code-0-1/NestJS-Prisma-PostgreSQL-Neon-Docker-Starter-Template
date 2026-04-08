@@ -20,7 +20,6 @@ export class ServicesService {
     return `${SERVICE_CACHE_PREFIX}:${salonId}`;
   }
 
-  // ✅ Create service
   async create(salonId: string, dto: CreateServiceDto) {
     try {
       const validEmployees = dto.employeeIds
@@ -60,7 +59,6 @@ export class ServicesService {
     }
   }
 
-  // ✅ Get all services
   async findAll(salonId: string) {
     const key = this.cacheKey(salonId);
 
@@ -83,7 +81,6 @@ export class ServicesService {
     return services;
   }
 
-  // ✅ Get single service
   async findOne(id: string) {
     const service = await this.prisma.service.findUnique({
       where: { id },
@@ -98,7 +95,6 @@ export class ServicesService {
     return service;
   }
 
-  // ✅ Update service
   async update(salonId: string, id: string, dto: UpdateServiceDto) {
     const service = await this.prisma.service.findFirst({
       where: { id, salonId },
@@ -139,7 +135,6 @@ export class ServicesService {
     return updated;
   }
 
-  // ✅ Delete service
   async remove(id: string) {
     await this.prisma.service.delete({ where: { id } });
     await this.redis.flushByPrefix(SERVICE_CACHE_PREFIX);
@@ -157,20 +152,17 @@ export class ServicesService {
   ) {
     const skip = (page - 1) * limit;
 
-    // ✅ Safe sorting
     const allowedSortFields = ['createdAt', 'price', 'duration', 'serviceName'];
     const safeSortBy = allowedSortFields.includes(sortBy)
       ? sortBy
       : 'createdAt';
     const safeOrder: 'asc' | 'desc' = order === 'asc' ? 'asc' : 'desc';
 
-    // ✅ Redis cache key
     const key = `${SERVICE_CACHE_PREFIX}:${salonId}:search:${search || 'all'}:categories:${categories?.join('|') || 'all'}:page:${page}:limit:${limit}:sort:${safeSortBy}:${safeOrder}`;
 
     const cached = await this.redis.get(key);
     if (cached) return JSON.parse(cached as string);
 
-    // ✅ Prisma where condition
     const whereCondition: any = { salonId };
 
     if (search) {
@@ -181,7 +173,6 @@ export class ServicesService {
       whereCondition.categories = { hasSome: categories };
     }
 
-    // ✅ Fetch services + count
     const [services, total] = await Promise.all([
       this.prisma.service.findMany({
         where: whereCondition,
@@ -201,7 +192,6 @@ export class ServicesService {
       this.prisma.service.count({ where: whereCondition }),
     ]);
 
-    // ✅ Flatten employees for API response
     const formattedServices = services.map((service) => ({
       ...service,
       employees: service.employees.map((se) => ({
@@ -226,7 +216,6 @@ export class ServicesService {
       },
     };
 
-    // ✅ Cache result in Redis
     await this.redis.set(key, JSON.stringify(result), 60);
 
     return result;

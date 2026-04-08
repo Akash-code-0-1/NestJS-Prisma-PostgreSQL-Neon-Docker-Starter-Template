@@ -25,10 +25,8 @@ export class ContactController {
     @Body() dto: CreateContactDto,
     @Req() req: any,
   ) {
-    // DEBUG: Add this console log to see exactly what req.user looks like in your terminal
     console.log('User from token:', req.user);
 
-    // If your strategy returns the payload, the ID is likely in 'sub'
     const userId = req.user?.sub || req.user?.id || null;
 
     return this.contactService.create(salonId, dto, userId);

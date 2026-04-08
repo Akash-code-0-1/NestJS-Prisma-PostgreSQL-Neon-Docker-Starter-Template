@@ -9,7 +9,6 @@ import {
   Patch,
 } from '@nestjs/common';
 import { AppointmentService } from './appointment.service';
-// Change the import below to get AppointmentStatus from your DTO
 import {
   CreateAppointmentDto,
   AppointmentStatus,
@@ -30,7 +29,6 @@ export class AppointmentController {
   @Get()
   async findAll(
     @Param('salonId') salonId: string,
-    // This will now use the DTO enum, matching the Service type
     @Query('status') status?: AppointmentStatus,
     @Query('view') view?: 'day' | 'week' | 'month',
     @Query('date') date?: string,

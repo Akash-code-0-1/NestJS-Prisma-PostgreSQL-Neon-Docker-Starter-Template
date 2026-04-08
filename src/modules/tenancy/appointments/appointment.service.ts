@@ -22,7 +22,6 @@ export class AppointmentService {
     private readonly redis: RedisService,
   ) {}
 
-  // ---------------------- LOG FUNCTION ----------------------
   private async log(
     tx: any,
     appointmentId: string,
@@ -40,9 +39,6 @@ export class AppointmentService {
     });
   }
 
-  // -------------------------------------------------------------------------
-  // CREATE
-  // -------------------------------------------------------------------------
   async create(salonId: string, dto: CreateAppointmentDto) {
     try {
       const result = await this.prisma.$transaction(async (tx) => {
@@ -56,7 +52,6 @@ export class AppointmentService {
           },
         });
 
-        // ✅ LOG CREATED
         await this.log(
           tx,
           appointment.id,
@@ -65,7 +60,6 @@ export class AppointmentService {
           dto.clientId,
         );
 
-        // ---------------- PARTICIPANTS ----------------
         if (dto.participants) {
           for (const p of dto.participants) {
             const participant = await tx.participant.create({
@@ -91,7 +85,6 @@ export class AppointmentService {
           }
         }
 
-        // ---------------- PAYMENT ----------------
         if (dto.payment) {
           await tx.payment.create({
             data: {
@@ -104,13 +97,11 @@ export class AppointmentService {
             },
           });
 
-          // ✅ Update appointment status to PAID
           await tx.appointment.update({
             where: { id: appointment.id },
             data: { status: AppointmentStatus.PAID as any },
           });
 
-          // ✅ Log payment
           await this.log(
             tx,
             appointment.id,
@@ -134,9 +125,6 @@ export class AppointmentService {
     }
   }
 
-  // -------------------------------------------------------------------------
-  // FIND ALL
-  // -------------------------------------------------------------------------
   async findAll(
     salonId: string,
     query: {
@@ -232,9 +220,6 @@ export class AppointmentService {
     return result;
   }
 
-  // -------------------------------------------------------------------------
-  // UPDATE
-  // -------------------------------------------------------------------------
   async update(
     id: string,
     salonId: string,
@@ -255,7 +240,6 @@ export class AppointmentService {
         },
       });
 
-      // ✅ LOG UPDATED
       await this.prisma.appointmentLog.create({
         data: {
           appointmentId: id,
@@ -285,9 +269,6 @@ export class AppointmentService {
     }
   }
 
-  // -------------------------------------------------------------------------
-  // FIND ONE
-  // -------------------------------------------------------------------------
   async findOne(id: string, salonId: string) {
     const data = await this.prisma.appointment.findFirst({
       where: { id, salonId },
@@ -307,13 +288,9 @@ export class AppointmentService {
     return data;
   }
 
-  // -------------------------------------------------------------------------
-  // REMOVE
-  // -------------------------------------------------------------------------
   async remove(id: string, salonId: string) {
     await this.prisma.appointment.delete({ where: { id, salonId } });
 
-    // ✅ LOG DELETED
     await this.prisma.appointmentLog.create({
       data: {
         appointmentId: id,
@@ -326,9 +303,6 @@ export class AppointmentService {
     return { success: true };
   }
 
-  // -------------------------------------------------------------------------
-  // GET LOGS
-  // -------------------------------------------------------------------------
   async getLogs(appointmentId: string, salonId: string) {
     try {
       return await this.prisma.appointmentLog.findMany({

@@ -9,7 +9,6 @@ import {
 import { Type } from 'class-transformer';
 import { OwnerDto } from '../../../../modules/iam/auth/salon-owners/dto/owner.dto';
 
-// Direct string union matching Prisma schema
 export type PlanType = 'BASIC' | 'PREMIUM' | 'ENTERPRISE';
 
 export class CreateSalonDto {

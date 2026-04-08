@@ -48,8 +48,6 @@ export class BundlesController {
     return this.bundlesService.update(id, salonId, dto);
   }
 
-  // src/modules/tenancy/bundles/bundles.controller.ts
-
   @Delete(':id')
   @Roles('SALON_OWNER')
   async remove(@Param('id') id: string, @Param('salonId') salonId: string) {

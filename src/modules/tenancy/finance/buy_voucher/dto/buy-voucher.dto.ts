@@ -1,6 +1,5 @@
 import { IsString, IsEmail, IsOptional, IsEnum } from 'class-validator';
 
-// Direct string union matching Prisma schema
 export type PaymentMethod =
   | 'PAY_IN_SALON'
   | 'CARD'

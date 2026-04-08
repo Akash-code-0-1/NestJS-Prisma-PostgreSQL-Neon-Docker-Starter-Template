@@ -1,4 +1,3 @@
-// src/modules/tenancy/receipts/entities/receipt.entity.ts
 import { Expose, Type } from 'class-transformer';
 
 export class ReceiptItemEntity {

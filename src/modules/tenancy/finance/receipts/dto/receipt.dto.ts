@@ -1,4 +1,3 @@
-// src/modules/tenancy/receipts/dto/receipt.dto.ts
 import {
   IsString,
   IsNotEmpty,

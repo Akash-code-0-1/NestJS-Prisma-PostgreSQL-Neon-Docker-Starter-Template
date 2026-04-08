@@ -8,7 +8,6 @@ export class ContactService {
 
   async create(salonId: string, dto: CreateContactDto, userId: string | null) {
     try {
-      // 1. Check if salon exists
       const salonExists = await this.prisma.salon.findUnique({
         where: { id: salonId },
       });
@@ -17,11 +16,10 @@ export class ContactService {
         throw new HttpException('Salon not found', HttpStatus.NOT_FOUND);
       }
 
-      // 2. Create the message
       return await this.prisma.contactMessage.create({
         data: {
           salonId,
-          userId: userId ? String(userId) : null, // Prisma handles null better as undefined or explicit null
+          userId: userId ? String(userId) : null,
           name: dto.name,
           email: dto.email,
           subject: dto.subject,

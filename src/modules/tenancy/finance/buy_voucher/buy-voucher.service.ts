@@ -42,7 +42,7 @@ export class BuyVoucherService {
         data: {
           amount: voucher.price,
           total: voucher.price,
-          method: dto.paymentMethod, // must match PaymentMethod enum
+          method: dto.paymentMethod,
           status: 'PENDING',
           voucherPurchase: { connect: { id: purchase.id } },
         },
@@ -52,7 +52,7 @@ export class BuyVoucherService {
         data: { paymentId: payment.id },
       });
 
-      return payment; // return payment or purchase depending on API design
+      return payment;
     });
   }
 

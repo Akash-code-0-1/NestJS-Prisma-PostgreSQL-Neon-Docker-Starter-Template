@@ -32,8 +32,7 @@ export class CreateShiftDto {
 
   @IsString()
   @IsNotEmpty()
-  date: string; // ISO format
-
+  date: string;
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ShiftIntervalDto)

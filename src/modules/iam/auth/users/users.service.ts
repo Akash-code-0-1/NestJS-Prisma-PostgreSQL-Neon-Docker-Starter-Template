@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../core/prisma/prisma.service';
@@ -8,7 +9,6 @@ import * as bcrypt from 'bcryptjs';
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
-  // Create a new Admin
   async create(dto: CreateUserDto) {
     const email = dto.email.toLowerCase();
 
@@ -49,7 +49,6 @@ export class UsersService {
     const where: any = {};
 
     if (search) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
         { email: { contains: search, mode: 'insensitive' } },

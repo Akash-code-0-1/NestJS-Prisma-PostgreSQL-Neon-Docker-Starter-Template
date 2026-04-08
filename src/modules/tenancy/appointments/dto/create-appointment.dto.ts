@@ -9,7 +9,6 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-// Defined locally to prevent Prisma build import errors
 export enum AppointmentStatus {
   BOOKED = 'BOOKED',
   STARTED = 'STARTED',

@@ -18,7 +18,7 @@ export class ActivityLoggerService {
         salonId,
         appointmentId,
         userId,
-        action, // e.g., "Receipt Printed"
+        action,
         status,
       },
     });

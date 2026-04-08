@@ -118,7 +118,6 @@ export class ShiftService {
   }
 
   async remove(id: string, salonId: string) {
-    // Verify existence and ownership first
     const shift = await this.prisma.shift.findFirst({
       where: { id, salonId },
     });

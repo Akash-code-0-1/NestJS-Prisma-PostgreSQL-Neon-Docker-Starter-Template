@@ -17,9 +17,12 @@ export class UsersController {
     @Query('limit') limit: string,
     @Query('search') search: string,
   ) {
-    return this.usersService.findAll(Number(page) || 1,Number(limit) || 10,search);
+    return this.usersService.findAll(
+      Number(page) || 1,
+      Number(limit) || 10,
+      search,
+    );
   }
-  // Admin-only: create a user
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPER_ADMIN')

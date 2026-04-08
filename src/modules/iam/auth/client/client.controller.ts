@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Controller, Post, Body, Param, UseGuards, Req } from '@nestjs/common';
@@ -25,7 +26,6 @@ export class ClientController {
   @UseGuards(JwtAuthGuard)
   @Post('logout')
   logout(@Req() req: any) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const clientId = req.user?.id ?? req.user?.sub;
 
     return this.clientService.logout(clientId);

@@ -17,7 +17,6 @@ export class DebugInterceptor implements NestInterceptor {
   ): Observable<any> {
     const req = context.switchToHttp().getRequest();
 
-    // Print request info always
     if (process.env.DEBUG_API === 'true') {
       console.log(`🛠️  API Hit: ${req.method} ${req.url}`);
       console.log('Body:', JSON.stringify(req.body, null, 2));
@@ -25,11 +24,10 @@ export class DebugInterceptor implements NestInterceptor {
       console.log('Query:', JSON.stringify(req.query, null, 2));
     }
 
-    // Only pause if VS Code debugger is attached
-    const isDebuggerAttached = !!process.debugPort; // true if debugger attached
+    const isDebuggerAttached = !!process.debugPort;
     if (process.env.DEBUG_API === 'true' && isDebuggerAttached) {
       console.log('💡 Debugger attached — pausing for inspection...');
-      debugger; // only triggers if a debugger is attached
+      debugger;
     }
 
     return next.handle().pipe(

@@ -24,14 +24,14 @@ import { Roles } from '../../../core/decorators/roles.decorators';
 import { SetOwnerPasswordDto } from '../../iam/auth/salon-owners/dto/set-owner-password.dto';
 import { FilterSalonDto } from './dto/admin-salon-filter.dto';
 import type { Request } from 'express';
-import { SalonOwnerAuthService } from '../../iam/auth/salon-owners/salonOwner-auth.service'; // Import the SalonOwnerAuthService
+import { SalonOwnerAuthService } from '../../iam/auth/salon-owners/salonOwner-auth.service';
 
 @Controller('iam/admin/salons')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class SalonsController {
   constructor(
     private readonly salonsService: SalonsService,
-    private readonly salonOwnerAuthService: SalonOwnerAuthService, // Inject the SalonOwnerAuthService
+    private readonly salonOwnerAuthService: SalonOwnerAuthService,
   ) {}
 
   @Post('create')
@@ -45,7 +45,6 @@ export class SalonsController {
   @Get()
   @Roles('SUPER_ADMIN')
   findAll(@Query() query: FilterSalonDto) {
-    // Convert numeric string fields to numbers
     const filters = {
       ...query,
       page: query.page ? Number(query.page) : 1,
@@ -58,7 +57,6 @@ export class SalonsController {
       maxSupport: query.maxSupport ? Number(query.maxSupport) : undefined,
     };
 
-    // Call the service with the updated filters
     return this.salonsService.findAll(filters);
   }
 
@@ -85,7 +83,6 @@ export class SalonsController {
     return this.salonsService.remove(id);
   }
 
-  // HARD DELETE - DEV ONLY
   @Delete('hard-delete/:id')
   @Roles('SUPER_ADMIN')
   hardDelete(@Param('id') id: string) {
@@ -99,14 +96,12 @@ export class SalonsController {
     return this.salonsService.hardDelete(id);
   }
 
-  // PATCH route for owner to set password
   @Patch('owner/:ownerId/set-password')
   async setOwnerPassword(
     @Param('ownerId') ownerId: string,
     @Body() dto: SetOwnerPasswordDto,
   ) {
     try {
-      // Call setPassword from SalonOwnerAuthService to set the password
       return await this.salonOwnerAuthService.setPassword(
         ownerId,
         dto.password,

@@ -23,7 +23,6 @@ import { UpdateTestimonialDto } from './dto/update-testimonial.dto';
 export class TestimonialController {
   constructor(private readonly service: TestimonialService) {}
 
-  // Only logged-in users can create
   @UseGuards(JwtAuthGuard)
   @Post()
   create(
@@ -31,7 +30,6 @@ export class TestimonialController {
     @Req() req: any,
     @Body() dto: CreateTestimonialDto,
   ) {
-    // JWT guard might attach sub, not id
     const userId = req.user?.id ?? req.user?.sub;
 
     if (!userId) {
@@ -41,19 +39,16 @@ export class TestimonialController {
     return this.service.create(salonId, userId, dto);
   }
 
-  // Public
   @Get()
   findAll(@Param('salonId') salonId: string) {
     return this.service.findAll(salonId);
   }
 
-  // Public
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.service.findOne(id);
   }
 
-  // Only owner can update
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
   update(
@@ -67,7 +62,6 @@ export class TestimonialController {
     return this.service.update(id, salonId, dto, userId);
   }
 
-  // Only owner can delete
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
   remove(

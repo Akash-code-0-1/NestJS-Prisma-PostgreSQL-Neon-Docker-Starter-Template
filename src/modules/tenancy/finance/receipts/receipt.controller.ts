@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-// src/modules/tenancy/receipts/receipts.controller.ts
 import {
   Controller,
   Post,
@@ -38,7 +37,6 @@ export class ReceiptsController {
     @Query('method') method?: string,
     @Query('dateRange') dateRange?: string,
   ) {
-    // Pass all filters as an object to the service
     return this.receiptsService.findAll(salonId, {
       page,
       limit,

@@ -42,7 +42,6 @@ export class SalonOwnerAnalyticsService {
     const now = new Date();
     const thirtyDaysAgo = subDays(now, 30);
 
-    // Parallel Execution: getTopServices
     const [metrics, weeklyChart, customersData, hrData, topServices] =
       await Promise.all([
         this.getTopMetrics(salonId, thirtyDaysAgo, employeeId),
@@ -132,7 +131,6 @@ export class SalonOwnerAnalyticsService {
   }
 
   private async getTopServices(salonId: string, employeeId?: string) {
-    // 1. Group by serviceId and count occurrences in AppointmentService
     const aggregatedServices = await this.prisma.appointmentService.groupBy({
       by: ['serviceId'],
       where: {
@@ -157,7 +155,6 @@ export class SalonOwnerAnalyticsService {
 
     if (aggregatedServices.length === 0) return [];
 
-    // 2. Fetch the names for these specific service IDs
     const serviceDetails = await this.prisma.service.findMany({
       where: {
         id: { in: aggregatedServices.map((s) => s.serviceId) },
@@ -168,7 +165,6 @@ export class SalonOwnerAnalyticsService {
       },
     });
 
-    // 3. Map into the final format
     return aggregatedServices.map((item) => {
       const detail = serviceDetails.find((d) => d.id === item.serviceId);
       return {

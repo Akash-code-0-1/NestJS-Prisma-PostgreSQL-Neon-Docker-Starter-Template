@@ -26,7 +26,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
         message = res;
         error = exception.name;
       } else if (typeof res === 'object' && res !== null) {
-        // Safely access properties
         const resObj = res as Record<string, unknown>;
         if ('message' in resObj && typeof resObj.message === 'string') {
           message = resObj.message;
@@ -47,7 +46,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
       error = exception.name;
     }
 
-    // Log the full exception safely
     console.error('Exception caught:', exception);
 
     response.status(status).json({

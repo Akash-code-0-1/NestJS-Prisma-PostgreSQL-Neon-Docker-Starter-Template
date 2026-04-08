@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from './users/users.service';
@@ -41,7 +43,6 @@ export class AuthService {
 
   async logout(adminId: string) {
     await this.usersService.updateRefreshToken(adminId, null);
-    // Remove the tokens from Redis
     await this.redisService.delete(`auth:${adminId}:access`);
     await this.redisService.delete(`auth:${adminId}:refresh`);
 

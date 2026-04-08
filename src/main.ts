@@ -28,5 +28,4 @@ async function bootstrap() {
   console.log(`🚀 App running on port ${process.env.PORT ?? 3000}`);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-floating-promises
 bootstrap();
