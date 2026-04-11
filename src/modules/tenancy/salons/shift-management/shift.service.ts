@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Redis } from 'ioredis';
@@ -14,6 +12,7 @@ import {
   ShiftIntervalDto,
 } from './dto/shift.dto';
 import { differenceInMinutes, parse } from 'date-fns';
+import { Shift } from '@prisma/client';
 
 @Injectable()
 export class ShiftService {
@@ -135,6 +134,52 @@ export class ShiftService {
     await this.clearCache(salonId);
 
     return { success: true, message: 'Shift deleted successfully' };
+  }
+
+  async updateMultiple(ids: string[], salonId: string, dto: CreateShiftDto) {
+    const totalHours = this.calculateTotalHours(dto.intervals);
+    const updatedShifts = await this.prisma.$transaction(async (tx) => {
+      const updated: Array<Shift> = []; // Define the type of the updated array as 'Shift' or whatever the type is
+      for (const id of ids) {
+        await tx.shiftInterval.deleteMany({ where: { shiftId: id } });
+        const updatedShift = await tx.shift.update({
+          where: { id, salonId },
+          data: {
+            date: new Date(dto.date),
+            employeeId: dto.employeeId,
+            totalHours,
+            intervals: { create: dto.intervals },
+          },
+          include: { intervals: true },
+        });
+        updated.push(updatedShift); // TypeScript will now know that updatedShifts contains Shift objects
+      }
+      return updated;
+    });
+    await this.clearCache(salonId);
+    return updatedShifts;
+  }
+
+  async removeMultiple(ids: string[], salonId: string) {
+    const shifts = await this.prisma.shift.findMany({
+      where: { id: { in: ids }, salonId },
+    });
+
+    if (shifts.length !== ids.length) {
+      throw new NotFoundException(`One or more shifts not found in this salon`);
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      for (const shift of shifts) {
+        await tx.shift.delete({
+          where: { id: shift.id },
+        });
+      }
+    });
+
+    await this.clearCache(salonId);
+
+    return { success: true, message: 'Shifts deleted successfully' };
   }
 
   private async clearCache(salonId: string) {

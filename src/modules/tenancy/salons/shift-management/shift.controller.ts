@@ -51,8 +51,21 @@ export class ShiftController {
     return this.shiftService.update(id, req.user.salonId, dto);
   }
 
+  @Put()
+  async updateMultiple(
+    @Req() req: any,
+    @Body() { ids, dto }: { ids: string[]; dto: CreateShiftDto },
+  ) {
+    return this.shiftService.updateMultiple(ids, req.user.salonId, dto);
+  }
+
   @Delete(':id')
   async remove(@Param('id') id: string, @Req() req: any) {
     return this.shiftService.remove(id, req.user.salonId);
+  }
+
+  @Delete()
+  async removeMultiple(@Req() req: any, @Body() ids: string[]) {
+    return this.shiftService.removeMultiple(ids, req.user.salonId);
   }
 }
