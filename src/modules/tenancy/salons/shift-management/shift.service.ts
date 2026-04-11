@@ -12,7 +12,6 @@ import {
   ShiftIntervalDto,
 } from './dto/shift.dto';
 import { differenceInMinutes, parse } from 'date-fns';
-import { Shift } from '@prisma/client';
 
 @Injectable()
 export class ShiftService {
@@ -139,7 +138,7 @@ export class ShiftService {
   async updateMultiple(ids: string[], salonId: string, dto: CreateShiftDto) {
     const totalHours = this.calculateTotalHours(dto.intervals);
     const updatedShifts = await this.prisma.$transaction(async (tx) => {
-      const updated: Array<Shift> = []; // Define the type of the updated array as 'Shift' or whatever the type is
+      const updated: any[] = [];
       for (const id of ids) {
         await tx.shiftInterval.deleteMany({ where: { shiftId: id } });
         const updatedShift = await tx.shift.update({
@@ -152,7 +151,7 @@ export class ShiftService {
           },
           include: { intervals: true },
         });
-        updated.push(updatedShift); // TypeScript will now know that updatedShifts contains Shift objects
+        updated.push(updatedShift);
       }
       return updated;
     });
