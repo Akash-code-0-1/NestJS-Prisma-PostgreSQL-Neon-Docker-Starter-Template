@@ -1,5 +1,6 @@
 import {
   IsDateString,
+  IsEnum,
   IsInt,
   IsNumber,
   IsOptional,
@@ -9,8 +10,12 @@ import {
   Min,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
-import { PayslipStatus } from '@prisma/client';
 
+export enum PayslipStatus {
+  DRAFT = 'DRAFT',
+  GENERATED = 'GENERATED',
+  PAID = 'PAID',
+}
 export class CreatePayslipDto {
   @IsUUID()
   employeeId: string;
@@ -72,6 +77,7 @@ export class UpdatePayslipDto {
 
   @IsOptional()
   @IsString()
+  @IsEnum(PayslipStatus)
   status?: PayslipStatus;
 }
 
