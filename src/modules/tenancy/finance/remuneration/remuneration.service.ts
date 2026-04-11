@@ -111,7 +111,7 @@ export class RemunerationService {
     const yearStart = new Date(`${year}-01-01T00:00:00.000Z`);
     const yearEnd = new Date(`${year}-12-31T23:59:59.999Z`);
 
-    const baseWhere: Prisma.PayslipWhereInput = {
+    const baseWhere = {
       salonId,
       employeeId,
       date: {
