@@ -107,10 +107,7 @@ model Salon {
   createdBy String?
   updatedBy String?
 
-  // Relation to owners (OwnerProfile)
-  owners OwnerProfile[]
-
-  // Reverse relations for EmployeeProfile and AccountantProfile
+  owners             OwnerProfile[]
   employeeProfiles   EmployeeProfile[]
   accountantProfiles AccountantProfile[]
 
@@ -126,7 +123,7 @@ model Salon {
   appointmentLogs  AppointmentLog[]
   payslips         Payslip[]
   paymentLogs      PaymentLog[]
-  shifts Shift[]
+  shifts           Shift[]
 
   @@index([status])
   @@index([plan])
@@ -137,7 +134,6 @@ model Salon {
   @@index([country, province])
 }
 
-// Multi-Tenant Bridge: User ↔ Salon
 model SalonUser {
   id        String   @id @default(uuid())
   userId    String
@@ -210,11 +206,6 @@ model ServiceEmployee {
   @@unique([serviceId, employeeId])
 }
 
-// -----------------
-// Optional Role Profiles (OwnerProfile, EmployeeProfile, AccountantProfile)
-// -----------------
-
-// OwnerProfile should reference the User model and the Salon model
 model OwnerProfile {
   id             String    @id @default(uuid())
   userId         String    @unique
@@ -222,19 +213,16 @@ model OwnerProfile {
   invitationSent Boolean   @default(false)
   deletedAt      DateTime?
 
-  salonId String // Reference to the salon the owner belongs to
-  salon   Salon  @relation(fields: [salonId], references: [id], onDelete: Cascade) // Reverse relation to Salon
+  salonId String
+  salon   Salon  @relation(fields: [salonId], references: [id], onDelete: Cascade)
 }
 
 enum ProfileStatus {
-  PENDING // Profile created but not fully activated
-  ACTIVE // Profile fully active
-  SUSPENDED // Optional future use
+  PENDING
+  ACTIVE
+  SUSPENDED
 }
 
-// -------------------------------------------------------------------------
-// NEW MODEL: Direct Manager (To handle the Manager UI section)
-// -------------------------------------------------------------------------
 model EmployeeProfile {
   id      String @id @default(uuid())
   userId  String @unique
@@ -242,12 +230,10 @@ model EmployeeProfile {
   salonId String
   salon   Salon  @relation(fields: [salonId], references: [id], onDelete: Cascade)
 
-  // --- [NEW] Personal Data ---
   phone  String?
   gender String?
   age    Int?
 
-  // --- [EXISTING] Employment Data (UNCHANGED) ---
   salary           Decimal  @db.Decimal(10, 2)
   designation      String
   dob              String
@@ -264,18 +250,15 @@ model EmployeeProfile {
   endDate          DateTime
   remunerationType String
 
-  // --- [NEW] Additional Professional Data ---
   certifications   String[] @default([])
   completedCourses String[] @default([])
 
   languages         EmployeeLanguage[]
   socialConnections SocialConnection[]
 
-  // --- [NEW] Direct Manager Link ---
   directManagerId String?
   directManager   DirectManager? @relation(fields: [directManagerId], references: [id])
 
-  // --- [EXISTING] Status & Meta (UNCHANGED) ---
   invitationStatus Boolean          @default(true)
   employmentStatus EmploymentStatus @default(PENDING)
   profileStatus    ProfileStatus    @default(PENDING)
@@ -288,9 +271,9 @@ model EmployeeProfile {
   updatedBy        String?
   lastLoginIp      String?
 
-  yearlyLeaveAllowance Int       @default(20) 
-  nextEvaluationDate   DateTime? 
-  contractNetSalary    Decimal?  @db.Decimal(10, 2) 
+  yearlyLeaveAllowance Int       @default(20)
+  nextEvaluationDate   DateTime?
+  contractNetSalary    Decimal?  @db.Decimal(10, 2)
 
   deletedAt DateTime?
   createdAt DateTime  @default(now())
@@ -301,23 +284,23 @@ model EmployeeProfile {
   bundleMembers    BundleMember[]
   timeOffRequests  TimeOffRequest[]
   payslips         Payslip[]
-  shifts Shift[]
+  shifts           Shift[]
 }
 
 model Shift {
-  id         String   @id @default(uuid())
+  id         String          @id @default(uuid())
   salonId    String
-  salon      Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  salon      Salon           @relation(fields: [salonId], references: [id], onDelete: Cascade)
   employeeId String
   employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   date       DateTime
   totalHours Decimal  @db.Decimal(10, 2)
-  
-  intervals  ShiftInterval[] 
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  intervals ShiftInterval[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([salonId])
   @@index([employeeId])
@@ -325,12 +308,12 @@ model Shift {
 }
 
 model ShiftInterval {
-  id        String @id @default(uuid())
-  shiftId   String
-  shift     Shift  @relation(fields: [shiftId], references: [id], onDelete: Cascade)
-  
-  startTime String 
-  endTime   String 
+  id      String @id @default(uuid())
+  shiftId String
+  shift   Shift  @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+
+  startTime String
+  endTime   String
 
   @@index([shiftId])
 }
@@ -376,16 +359,12 @@ model AccountantProfile {
   licenseNumber String?
   deletedAt     DateTime?
 
-  salonId String // The Salon ID this AccountantProfile belongs to
-  salon   Salon  @relation(fields: [salonId], references: [id], onDelete: Cascade) // Reverse relation to Salon
+  salonId String
+  salon   Salon  @relation(fields: [salonId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
-
-// -------------------------------------------------------------------------
-// APPOINTMENT
-// -------------------------------------------------------------------------
 
 model Appointment {
   id      String @id @default(uuid())
@@ -411,30 +390,6 @@ model Appointment {
   @@index([clientId])
 }
 
-// -------------------------------------------------------------------------
-// NEW MODEL: Appointment Activity Log
-// -------------------------------------------------------------------------
-
-// model AppointmentLog {
-//   id            String   @id @default(uuid())
-
-//   // Link to the appointment
-//   appointmentId String
-//   appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-
-//   // Link to the person who did the action (Admin, Owner, or Employee)
-//   userId        String?
-//   user          User?       @relation(fields: [userId], references: [id])
-
-//   // Content of the log
-//   action        String      // e.g., "Confirmed", "Arrived", "Receipt Printed"
-//   status        AppointmentStatus 
-
-//   createdAt     DateTime    @default(now()) // This is the "time" shown in your UI list
-
-//   @@index([appointmentId])
-// }
-
 model AppointmentLog {
   id            String      @id @default(uuid())
   salonId       String? // Added for faster filtering by Salon
@@ -452,10 +407,6 @@ model AppointmentLog {
   @@index([appointmentId])
 }
 
-// -------------------------------------------------------------------------
-// PARTICIPANT
-// -------------------------------------------------------------------------
-
 model Participant {
   id            String      @id @default(uuid())
   appointmentId String
@@ -468,10 +419,6 @@ model Participant {
 
   services AppointmentService[]
 }
-
-// -------------------------------------------------------------------------
-// APPOINTMENT SERVICE
-// -------------------------------------------------------------------------
 
 model AppointmentService {
   id String @id @default(uuid())
@@ -487,14 +434,9 @@ model AppointmentService {
 
   priceAtBooking Decimal @db.Decimal(10, 2)
 
-  // ✅ Updated time handling (your diagram)
   startAt DateTime
   endAt   DateTime
 }
-
-// -------------------------------------------------------------------------
-// PAYMENT
-// -------------------------------------------------------------------------
 
 model Payment {
   id String @id @default(uuid())
@@ -528,10 +470,6 @@ model Payment {
   logs PaymentLog[]
 }
 
-// -------------------------------------------------------------------------
-// ENUMS
-// -------------------------------------------------------------------------
-
 enum AppointmentStatus {
   BOOKED
   STARTED
@@ -556,10 +494,6 @@ enum PaymentStatus {
   FAILED
   REFUNDED
 }
-
-// -------------------------------------------------------------------------
-//                                 VOUCHER
-// -------------------------------------------------------------------------
 
 model Voucher {
   id String @id @default(uuid())
@@ -613,7 +547,6 @@ model VoucherPurchase {
   expiryDate DateTime
   status     VoucherStatus @default(PENDING)
 
-  // ✅ ONLY HERE define relation
   paymentId String?  @unique
   payment   Payment? @relation(fields: [paymentId], references: [id])
 
@@ -635,15 +568,12 @@ enum VoucherStatus {
 model ContactMessage {
   id String @id @default(uuid())
 
-  // Link to the specific salon being contacted
   salonId String
   salon   Salon  @relation(fields: [salonId], references: [id], onDelete: Cascade)
 
-  // Link to user if they are logged in (Optional)
   userId String?
   user   User?   @relation(fields: [userId], references: [id])
 
-  // Form fields from your UI
   name    String
   email   String
   subject String
@@ -763,14 +693,12 @@ model Bundle {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relationships
   services BundleService[]
   members  BundleMember[]
 
   @@index([salonId])
 }
 
-// Junction table for Bundle ↔ Service
 model BundleService {
   id        String @id @default(uuid())
   bundleId  String
@@ -782,7 +710,6 @@ model BundleService {
   @@unique([bundleId, serviceId])
 }
 
-// Junction table for Bundle ↔ EmployeeProfile
 model BundleMember {
   id         String @id @default(uuid())
   bundleId   String
@@ -809,7 +736,7 @@ model TimeOffRequest {
   repeatFrequency RepeatFrequency?
 
   description String?
-  status      String  @default("APPROVED") // or PENDING
+  status      String  @default("APPROVED")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -845,7 +772,7 @@ model Payslip {
   tfrAccumulated  Decimal @db.Decimal(12, 2) // Running total (e.g., € 5,500)
 
   status      PayslipStatus @default(GENERATED)
-  documentUrl String? // Link for "Download" action
+  documentUrl String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -867,11 +794,11 @@ enum PayslipStatus {
 
 model PaymentLog {
   id        String  @id @default(uuid())
-  salonId   String // Ensures data isolation for the Owner
+  salonId   String
   salon     Salon   @relation(fields: [salonId], references: [id], onDelete: Cascade)
   paymentId String
   payment   Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
-  userId    String? // Admin/Owner who triggered the action
+  userId    String?
   user      User?   @relation(fields: [userId], references: [id])
 
   event        String // e.g., "STRIPE_WEBHOOK_RECEIVED"
