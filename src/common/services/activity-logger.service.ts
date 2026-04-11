@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
-import { AppointmentStatus } from '@prisma/client';
+import { AppointmentStatus } from '../../modules/tenancy/appointments/dto/create-appointment.dto';
 
 @Injectable()
 export class ActivityLoggerService {
