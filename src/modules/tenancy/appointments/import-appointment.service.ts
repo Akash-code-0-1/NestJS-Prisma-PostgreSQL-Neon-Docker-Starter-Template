@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { RedisService } from '../../../core/redis/redis.service';
 
@@ -19,13 +19,13 @@ export class AppointmentImportService {
     await this.prisma.stagedAppointment.createMany({
       data: items.map((item) => ({
         salonId,
-        externalId: item.id,
+        externalId: item.id?.toString(),
         startAt: new Date(item.start_at),
         endAt: new Date(item.end_at),
         clientRef: item.client_ref,
         serviceRef: item.service_ref,
         staffRef: item.staff_ref,
-        status: item.status || 'BOOKED',
+        status: (item.status || 'BOOKED').toUpperCase(),
         note: item.note,
       })),
     });
@@ -55,37 +55,81 @@ export class AppointmentImportService {
     return result;
   }
 
-  // POST: Mass Approval (Save Button)
   async approveBulk(salonId: string, ids: string[]) {
     const items = await this.prisma.stagedAppointment.findMany({
       where: { id: { in: ids }, salonId },
     });
 
-    await this.prisma.$transaction(async (tx) => {
+    if (items.length === 0) {
+      throw new BadRequestException('No items found to approve');
+    }
+
+    return await this.prisma.$transaction(async (tx) => {
       for (const item of items) {
+        let finalClientId: string;
+
+        // 1. Try to find existing user
+        const existingUser = await tx.user.findFirst({
+          where: {
+            OR: [{ id: item.clientRef || '' }, { email: item.clientRef || '' }],
+          },
+        });
+
+        if (existingUser) {
+          finalClientId = existingUser.id;
+        } else {
+          // 2. Auto-generate Client using string literals for Role
+          const uniqueEmail = `import.${Date.now()}.${Math.floor(Math.random() * 1000)}@salon-guest.com`;
+
+          const newClient = await tx.user.create({
+            data: {
+              firstName: item.clientRef || 'Imported',
+              lastName: 'Client',
+              email: uniqueEmail,
+              role: 'CLIENT' as any, // Use string literal cast to any
+              isActive: true,
+              salonUsers: {
+                create: {
+                  salonId: salonId,
+                  role: 'CLIENT' as any,
+                },
+              },
+            },
+          });
+          finalClientId = newClient.id;
+        }
+
+        // 3. Create Appointment using string literal for Status
+        const normalizedStatus = item.status?.toUpperCase() || 'BOOKED';
+
         await tx.appointment.create({
           data: {
-            salonId,
-            clientId: item.clientRef || 'import-default',
+            salonId: salonId,
+            clientId: finalClientId,
             date: item.startAt,
-            status: item.status as any,
+            status: normalizedStatus as any, // Cast to any to bypass Prisma Enum check
             note: item.note,
-            // Add participants/services logic here
           },
         });
       }
-      // Delete from staging after moving to live
-      await tx.stagedAppointment.deleteMany({ where: { id: { in: ids } } });
-    });
 
-    await this.redis.flushByPrefix(`${this.CACHE_PREFIX}:${salonId}`);
-    await this.redis.flushByPrefix(`appointments:${salonId}`);
+      // 4. Cleanup
+      await tx.stagedAppointment.deleteMany({
+        where: { id: { in: ids }, salonId },
+      });
+
+      await this.redis.flushByPrefix(`${this.CACHE_PREFIX}:${salonId}`);
+      await this.redis.flushByPrefix(`appointments:${salonId}`);
+
+      return { success: true, count: items.length };
+    });
   }
 
   async deleteStaged(salonId: string, ids: string[]) {
-    await this.prisma.stagedAppointment.deleteMany({
+    const result = await this.prisma.stagedAppointment.deleteMany({
       where: { id: { in: ids }, salonId },
     });
     await this.redis.flushByPrefix(`${this.CACHE_PREFIX}:${salonId}`);
+    return result;
   }
 }
