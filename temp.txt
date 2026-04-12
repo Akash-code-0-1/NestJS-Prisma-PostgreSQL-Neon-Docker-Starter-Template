@@ -1,385 +1,134 @@
-This is the complete, production-ready implementation for the **Bundles** module. It includes the logic for multi-tenant isolation, Redis cache invalidation, complex duration calculations (Sequence vs. Parallel), and the many-to-many synchronization required for services and staff.
-
-### **1. DTO (Data Transfer Object)**
-`src/modules/tenancy/bundles/dto/bundle.dto.ts`
-
-```typescript
-import { IsString, IsEnum, IsOptional, IsNumber, IsBoolean, IsArray, IsUUID, Min } from 'class-validator';
-import { BundleScheduleType, BundleCategory, BundlePriceType } from '@prisma/client';
-
-export class CreateBundleDto {
-  @IsString()
-  name: string;
-
-  @IsEnum(BundleCategory)
-  category: BundleCategory;
-
-  @IsOptional()
-  @IsString()
-  description?: string;
-
-  @IsEnum(BundlePriceType)
-  priceType: BundlePriceType;
-
-  @IsNumber()
-  @Min(0)
-  price: number;
-
-  @IsEnum(BundleScheduleType)
-  scheduleType: BundleScheduleType;
-
-  @IsBoolean()
-  @IsOptional()
-  addToOnlineBook: boolean = true;
-
-  @IsArray()
-  @IsUUID('4', { each: true })
-  serviceIds: string[];
-
-  @IsArray()
-  @IsUUID('4', { each: true })
-  employeeIds: string[];
-}
-
-export class BundleQueryDto {
-  @IsOptional() @IsString() page?: string;
-  @IsOptional() @IsString() limit?: string;
-  @IsOptional() @IsString() search?: string;
-  @IsOptional() @IsEnum(BundleCategory) category?: BundleCategory;
-}
-```
-
----
-
-### **2. Entity**
-`src/modules/tenancy/bundles/entities/bundle.entity.ts`
-
-```typescript
-import { Bundle, BundleScheduleType, BundleCategory, BundlePriceType } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
-
-export class BundleEntity implements Bundle {
-  id: string;
-  salonId: string;
-  name: string;
-  category: BundleCategory;
-  description: string | null;
-  priceType: BundlePriceType;
-  price: Decimal;
-  duration: number;
-  scheduleType: BundleScheduleType;
-  addToOnlineBook: boolean;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-
-  _count?: {
-    services: number;
-    members: number;
-  };
-
-  constructor(partial: Partial<BundleEntity>) {
-    Object.assign(this, partial);
-  }
-}
-```
-
----
-
-### **3. Service**
-`src/modules/tenancy/bundles/bundles.service.ts`
-
-```typescript
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { RedisService } from '../../../core/redis/redis.service';
-import { BUNDLE_CACHE_PREFIX } from '../../../core/redis/redis.constants';
-import { CreateBundleDto } from './dto/bundle.dto';
 
 @Injectable()
-export class BundlesService {
+export class AppointmentImportService {
+  private readonly CACHE_PREFIX = 'staged_imports';
+
   constructor(
     private readonly prisma: PrismaService,
-    private readonly redisService: RedisService,
+    private readonly redis: RedisService,
   ) {}
 
-  private async calculateDuration(serviceIds: string[], scheduleType: string): Promise<number> {
-    const services = await this.prisma.service.findMany({
-      where: { id: { in: serviceIds } },
-      select: { duration: true },
+  // POST: Save CSV data to staging
+  async stageData(salonId: string, items: any[]) {
+    await this.prisma.stagedAppointment.createMany({
+      data: items.map(item => ({
+        salonId,
+        externalId: item.id,
+        startAt: new Date(item.start_at),
+        endAt: new Date(item.end_at),
+        clientRef: item.client_ref,
+        serviceRef: item.service_ref,
+        staffRef: item.staff_ref,
+        status: item.status || 'Booked',
+        note: item.note,
+      })),
     });
-
-    if (scheduleType === 'BOOKED_IN_SEQUENCE') {
-      return services.reduce((acc, s) => acc + s.duration, 0);
-    }
-    return Math.max(...services.map((s) => s.duration), 0);
+    await this.redis.flushByPrefix(`${this.CACHE_PREFIX}:${salonId}`);
   }
 
-  async create(salonId: string, dto: CreateBundleDto) {
-    const duration = await this.calculateDuration(dto.serviceIds, dto.scheduleType);
+  // GET: Fetch the "Imported List" with pagination
+  async getStaged(salonId: string, page = 1, limit = 10) {
+    const cacheKey = `${this.CACHE_PREFIX}:${salonId}:p${page}:l${limit}`;
+    const cached = await this.redis.get(cacheKey);
+    if (cached) return cached;
 
-    const bundle = await this.prisma.$transaction(async (tx) => {
-      return tx.bundle.create({
-        data: {
-          salonId,
-          name: dto.name,
-          category: dto.category,
-          description: dto.description,
-          priceType: dto.priceType,
-          price: dto.price,
-          duration,
-          scheduleType: dto.scheduleType,
-          addToOnlineBook: dto.addToOnlineBook,
-          services: { create: dto.serviceIds.map((id) => ({ serviceId: id })) },
-          members: { create: dto.employeeIds.map((id) => ({ employeeId: id })) },
-        },
-      });
-    });
-
-    await this.redisService.flushByPrefix(`${BUNDLE_CACHE_PREFIX}:${salonId}`);
-    return bundle;
-  }
-
-  async findAll(salonId: string, query: any) {
-    const { page = 1, limit = 10, search, category } = query;
-    const cacheKey = `${BUNDLE_CACHE_PREFIX}:${salonId}:p:${page}:l:${limit}:s:${search}:c:${category}`;
-    
-    const cached = await this.redisService.get(cacheKey);
-    if (cached) return JSON.parse(cached.toString());
-
-    const where: any = { salonId, isActive: true };
-    if (search) where.name = { contains: search, mode: 'insensitive' };
-    if (category) where.category = category;
-
-    const [total, data] = await this.prisma.$transaction([
-      this.prisma.bundle.count({ where }),
-      this.prisma.bundle.findMany({
-        where,
-        skip: (Number(page) - 1) * Number(limit),
-        take: Number(limit),
-        include: {
-          _count: { select: { services: true, members: true } },
-        },
+    const skip = (page - 1) * limit;
+    const [total, data] = await Promise.all([
+      this.prisma.stagedAppointment.count({ where: { salonId } }),
+      this.prisma.stagedAppointment.findMany({
+        where: { salonId },
+        skip,
+        take: limit,
         orderBy: { createdAt: 'desc' },
       }),
     ]);
 
-    const res = { data, meta: { total, page: Number(page), limit: Number(limit) } };
-    await this.redisService.set(cacheKey, JSON.stringify(res), 3600);
-    return res;
+    const result = { data, meta: { total, page, lastPage: Math.ceil(total / limit) } };
+    await this.redis.set(cacheKey, result, 60); // Cache for 1 minute
+    return result;
   }
 
-  async findOne(id: string, salonId: string) {
-    const bundle = await this.prisma.bundle.findFirst({
-      where: { id, salonId, isActive: true },
-      include: {
-        services: { include: { service: true } },
-        members: { include: { employee: { include: { user: true } } } },
-      },
+  // POST: Mass Approval (Save Button)
+  async approveBulk(salonId: string, ids: string[]) {
+    const items = await this.prisma.stagedAppointment.findMany({
+      where: { id: { in: ids }, salonId },
     });
-    if (!bundle) throw new HttpException('Bundle not found', HttpStatus.NOT_FOUND);
-    return bundle;
+
+    await this.prisma.$transaction(async (tx) => {
+      for (const item of items) {
+        await tx.appointment.create({
+          data: {
+            salonId,
+            clientId: item.clientRef || 'import-default', 
+            date: item.startAt,
+            status: item.status as any,
+            note: item.note,
+            // Add participants/services logic here
+          },
+        });
+      }
+      // Delete from staging after moving to live
+      await tx.stagedAppointment.deleteMany({ where: { id: { in: ids } } });
+    });
+
+    await this.redis.flushByPrefix(`${this.CACHE_PREFIX}:${salonId}`);
+    await this.redis.flushByPrefix(`appointments:${salonId}`); // Clear main appt cache
   }
 
-  async update(id: string, salonId: string, dto: CreateBundleDto) {
-    await this.findOne(id, salonId); // Ensure exists
-    const duration = await this.calculateDuration(dto.serviceIds, dto.scheduleType);
-
-    const updated = await this.prisma.$transaction(async (tx) => {
-      await tx.bundleService.deleteMany({ where: { bundleId: id } });
-      await tx.bundleMember.deleteMany({ where: { bundleId: id } });
-
-      return tx.bundle.update({
-        where: { id },
-        data: {
-          name: dto.name,
-          category: dto.category,
-          description: dto.description,
-          priceType: dto.priceType,
-          price: dto.price,
-          duration,
-          scheduleType: dto.scheduleType,
-          addToOnlineBook: dto.addToOnlineBook,
-          services: { create: dto.serviceIds.map((sId) => ({ serviceId: sId })) },
-          members: { create: dto.employeeIds.map((eId) => ({ employeeId: eId })) },
-        },
-      });
+  async deleteStaged(salonId: string, ids: string[]) {
+    await this.prisma.stagedAppointment.deleteMany({
+      where: { id: { in: ids }, salonId },
     });
-
-    await this.redisService.flushByPrefix(`${BUNDLE_CACHE_PREFIX}:${salonId}`);
-    return updated;
-  }
-
-  async remove(id: string, salonId: string) {
-    await this.prisma.bundle.updateMany({
-      where: { id, salonId },
-      data: { isActive: false },
-    });
-    await this.redisService.flushByPrefix(`${BUNDLE_CACHE_PREFIX}:${salonId}`);
-    return { message: 'Bundle deleted successfully' };
+    await this.redis.flushByPrefix(`${this.CACHE_PREFIX}:${salonId}`);
   }
 }
-```
 
----
 
-### **4. Controller**
-`src/modules/tenancy/bundles/bundles.controller.ts`
-
-```typescript
-import { Controller, Get, Post, Body, Param, Query, Delete, Patch, UseGuards } from '@nestjs/common';
-import { BundlesService } from './bundles.service';
-import { CreateBundleDto, BundleQueryDto } from './dto/bundle.dto';
-import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard';
-import { RolesGuard } from '../../../core/guards/roles.guard';
-import { Roles } from '../../../core/decorators/roles.decorators';
-
-@Controller('salons/:salonId/bundles')
-@UseGuards(JwtAuthGuard, RolesGuard)
-export class BundlesController {
-  constructor(private readonly bundlesService: BundlesService) {}
-
-  @Post()
-  @Roles('SALON_OWNER')
-  create(@Param('salonId') salonId: string, @Body() dto: CreateBundleDto) {
-    return this.bundlesService.create(salonId, dto);
-  }
-
-  @Get()
-  @Roles('SALON_OWNER', 'EMPLOYEE', 'ACCOUNTANT')
-  findAll(@Param('salonId') salonId: string, @Query() query: BundleQueryDto) {
-    return this.bundlesService.findAll(salonId, query);
-  }
-
-  @Get(':id')
-  @Roles('SALON_OWNER', 'EMPLOYEE')
-  findOne(@Param('id') id: string, @Param('salonId') salonId: string) {
-    return this.bundlesService.findOne(id, salonId);
-  }
-
-  @Patch(':id')
-  @Roles('SALON_OWNER')
-  update(
-    @Param('id') id: string,
-    @Param('salonId') salonId: string,
-    @Body() dto: CreateBundleDto,
-  ) {
-    return this.bundlesService.update(id, salonId, dto);
-  }
-
-  @Delete(':id')
-  @Roles('SALON_OWNER')
-  remove(@Param('id') id: string, @Param('salonId') salonId: string) {
-    return this.bundlesService.remove(id, salonId);
-  }
-}
-```
-
----
-
-### **5. Module**
-`src/modules/tenancy/bundles/bundles.module.ts`
-
-```typescript
 import { Module } from '@nestjs/common';
-import { BundlesService } from './bundles.service';
-import { BundlesController } from './bundles.controller';
-import { PrismaModule } from '../../../core/prisma/prisma.module';
-import { RedisModule } from '../../../core/redis/redis.module';
+import { AppointmentImportService } from './import.service';
+import { AppointmentImportController } from './import.controller';
 
 @Module({
-  imports: [PrismaModule, RedisModule],
-  controllers: [BundlesController],
-  providers: [BundlesService],
-  exports: [BundlesService],
+  controllers: [AppointmentImportController],
+  providers: [AppointmentImportService],
 })
-export class BundlesModule {}
-```
-
-### **Testing Strategy**
-* **Creation:** Pass an array of `serviceIds`. The service will automatically sum the time if "Sequence" is chosen.
-* **Filtering:** Use `?category=PROMOTION` or `?search=Bridal` to test the Redis-cached `findAll`.
-* **Cleanup:** The `remove` method uses a soft delete (`isActive: false`) to preserve historical data for existing appointments.
+export class AppointmentImportModule {}
 
 
+import { Controller, Post, Get, Delete, Body, Query, Req, UseGuards } from '@nestjs/common';
+import { AppointmentImportService } from './import.service';
+import { JwtAuthGuard } from '../../../../core/guards/jwt-auth.guard';
+import { StageImportDto, BulkActionDto, ImportQueryDto } from './dto/import-appointment.dto';
 
-To test your new **Bundles** module, here is the organized JSON data for Postman. These payloads follow your Prisma schema exactly and include the multi-tenant `salonId` and junction table IDs (Services and Employees).
+@Controller('tenancy/appointments/import')
+@UseGuards(JwtAuthGuard)
+export class AppointmentImportController {
+  constructor(private readonly service: AppointmentImportService) {}
 
-### **1. Create a New Bundle (POST)**
-**URL:** `{{baseUrl}}/salons/{{salonId}}/bundles`  
-**Description:** Use this to test the transaction logic and duration calculation.
+  @Post('stage')
+  async upload(@Req() req: any, @Body() dto: StageImportDto) {
+    return this.service.stageData(req.user.salonId, dto.items);
+  }
 
-```json
-{
-  "name": "Luxury Bridal Package",
-  "category": "REGULAR",
-  "description": "Includes premium haircut, hair coloring, and full makeup session.",
-  "priceType": "FIXED",
-  "price": 150.00,
-  "scheduleType": "BOOKED_IN_SEQUENCE",
-  "addToOnlineBook": true,
-  "serviceIds": [
-    "service-uuid-1",
-    "service-uuid-2"
-  ],
-  "employeeIds": [
-    "employee-uuid-1",
-    "employee-uuid-2"
-  ]
+  @Get('staged-list')
+  async getList(@Req() req: any, @Query() query: ImportQueryDto) {
+    return this.service.getStaged(
+      req.user.salonId, 
+      Number(query.page) || 1, 
+      Number(query.limit) || 10
+    );
+  }
+
+  @Post('approve-mass')
+  async approve(@Req() req: any, @Body() dto: BulkActionDto) {
+    return this.service.approveBulk(req.user.salonId, dto.ids);
+  }
+
+  @Delete('reject-mass')
+  async reject(@Req() req: any, @Body() dto: BulkActionDto) {
+    return this.service.deleteStaged(req.user.salonId, dto.ids);
+  }
 }
-```
-
----
-
-### **2. Filter & Get All Bundles (GET)**
-**URL:** `{{baseUrl}}/salons/{{salonId}}/bundles?page=1&limit=10&search=Bridal&category=REGULAR`  
-**Description:** Tests Redis caching and pagination. Note that the response will include `_count` for the dashboard table.
-
----
-
-### **3. Update / Edit Bundle (PATCH)**
-**URL:** `{{baseUrl}}/salons/{{salonId}}/bundles/{{bundleId}}`  
-**Description:** This tests the "Sync" logic where old service/member relations are deleted and replaced.
-
-```json
-{
-  "name": "Updated Luxury Package",
-  "category": "PROMOTION",
-  "description": "Now with a 10% discount for summer!",
-  "priceType": "PERCENTAGE_DISCOUNT",
-  "price": 135.00,
-  "scheduleType": "BOOKED_IN_PARALLEL",
-  "addToOnlineBook": true,
-  "serviceIds": [
-    "service-uuid-1",
-    "service-uuid-3"
-  ],
-  "employeeIds": [
-    "employee-uuid-1"
-  ]
-}
-```
-
----
-
-### **4. Get Specific Bundle (GET)**
-**URL:** `{{baseUrl}}/salons/{{salonId}}/bundles/{{bundleId}}`  
-**Description:** This returns the full object including nested `services` and `members` (with user names) for the "View Details" screen.
-
----
-
-### **5. Soft Delete Bundle (DELETE)**
-**URL:** `{{baseUrl}}/salons/{{salonId}}/bundles/{{bundleId}}`  
-**Description:** Sets `isActive: false` and flushes the Redis cache for that salon.
-
----
-
-### **Postman Pro-Tip: Pre-request Script**
-Since your project is multi-tenant, you can automate your tests by setting a `salonId` variable in your Postman Environment or Folder.
-
-1.  Create an **Environment** in Postman.
-2.  Add a variable `salonId`.
-3.  Add a variable `baseUrl` (e.g., `http://localhost:3000`).
-4.  In your requests, use the double curly braces: `{{baseUrl}}/salons/{{salonId}}/bundles`.
-
-**Would you like me to help you write a script to automatically verify if the calculated duration is correct based on the services sent in the POST request?**

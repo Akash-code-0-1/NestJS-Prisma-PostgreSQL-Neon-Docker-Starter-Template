@@ -8,3 +8,4 @@ export const BUNDLE_CACHE_PREFIX = 'salon_bundles:v1';
 export const REMUNERATION_CACHE_PREFIX = 'salon_remuneration:v1';
 export const ANALYTICS_CACHE_PREFIX = 'salon_owner_analytics:v1';
 export const EMPLOYEE_SHIFT_CACHE_PREFIX = 'shifts:v1';
+export const APPOINTMENT_STAGED_CACHE_PREFIX = 'staged_appointments_import:v1';

@@ -390,6 +390,23 @@ model Appointment {
   @@index([clientId])
 }
 
+model StagedAppointment {
+  id          String   @id @default(uuid())
+  salonId     String
+  externalId  String? 
+  startAt     DateTime
+  endAt       DateTime
+  clientRef   String?
+  serviceRef  String?
+  staffRef    String?
+  status      String   @default("Booked")
+  note        String?
+  createdAt   DateTime @default(now())
+
+  @@index([salonId])
+}
+
+
 model AppointmentLog {
   id            String      @id @default(uuid())
   salonId       String? // Added for faster filtering by Salon
