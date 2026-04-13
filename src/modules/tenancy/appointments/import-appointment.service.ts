@@ -86,7 +86,7 @@ export class AppointmentImportService {
               firstName: item.clientRef || 'Imported',
               lastName: 'Client',
               email: uniqueEmail,
-              role: 'CLIENT' as any, // Use string literal cast to any
+              role: 'CLIENT' as any,
               isActive: true,
               salonUsers: {
                 create: {
@@ -107,7 +107,7 @@ export class AppointmentImportService {
             salonId: salonId,
             clientId: finalClientId,
             date: item.startAt,
-            status: normalizedStatus as any, // Cast to any to bypass Prisma Enum check
+            status: normalizedStatus as any,
             note: item.note,
           },
         });
