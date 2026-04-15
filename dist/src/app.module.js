@@ -31,6 +31,7 @@ const salonowner_analytics_module_1 = require("./modules/tenancy/analytics/salon
 const shift_module_1 = require("./modules/tenancy/salons/shift-management/shift.module");
 const import_appointment_module_1 = require("./modules/tenancy/appointments/import-appointment.module");
 const import_services_module_1 = require("./modules/tenancy/salons/services/import-services.module");
+const import_employee_module_1 = require("./modules/tenancy/salons/employee-management/import-employee.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -65,6 +66,7 @@ exports.AppModule = AppModule = __decorate([
             shift_module_1.ShiftModule,
             import_appointment_module_1.AppointmentImportModule,
             import_services_module_1.ServiceImportModule,
+            import_employee_module_1.EmployeeImportModule,
         ],
     })
 ], AppModule);

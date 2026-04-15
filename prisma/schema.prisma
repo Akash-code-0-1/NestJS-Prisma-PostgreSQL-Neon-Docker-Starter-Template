@@ -195,24 +195,23 @@ model Service {
 }
 
 model StagedService {
-  id              String   @id @default(uuid())
-  salonId         String
-  externalId      String?  // Original ID from CSV (e.g., #001)
-  
-  name            String
-  description     String?
-  duration        Int      @default(0)
-  price           Float    @default(0)
-  vat             Float    @default(0)
-  category        String?
-  postBreakMin    Int      @default(0)
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id         String  @id @default(uuid())
+  salonId    String
+  externalId String? // Original ID from CSV (e.g., #001)
+
+  name         String
+  description  String?
+  duration     Int     @default(0)
+  price        Float   @default(0)
+  vat          Float   @default(0)
+  category     String?
+  postBreakMin Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([salonId])
 }
-
 
 model ServiceEmployee {
   id String @id @default(uuid())
@@ -305,6 +304,44 @@ model EmployeeProfile {
   timeOffRequests  TimeOffRequest[]
   payslips         Payslip[]
   shifts           Shift[]
+}
+
+model StagedEmployee {
+  id         String  @id @default(uuid())
+  salonId    String
+  externalId String? // e.g., #001 from CSV
+
+  // Basic Info
+  firstName String
+  lastName  String
+  email     String
+  phone     String?
+  gender    String?
+
+  // Employment Details
+  designation      String?
+  salary           Float     @default(0)
+  contractType     String?
+  startDate        DateTime?
+  dob              String?
+  endDate          DateTime?
+  remunerationType String?
+
+  // Professional / Tax Info
+  taxIdCode String?
+  iban      String?
+
+  // Address Info
+  address  String?
+  city     String?
+  province String?
+  cap      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([salonId])
+  @@index([email])
 }
 
 model Shift {
@@ -411,21 +448,20 @@ model Appointment {
 }
 
 model StagedAppointment {
-  id          String   @id @default(uuid())
-  salonId     String
-  externalId  String? 
-  startAt     DateTime
-  endAt       DateTime
-  clientRef   String?
-  serviceRef  String?
-  staffRef    String?
-  status      String   @default("Booked")
-  note        String?
-  createdAt   DateTime @default(now())
+  id         String   @id @default(uuid())
+  salonId    String
+  externalId String?
+  startAt    DateTime
+  endAt      DateTime
+  clientRef  String?
+  serviceRef String?
+  staffRef   String?
+  status     String   @default("Booked")
+  note       String?
+  createdAt  DateTime @default(now())
 
   @@index([salonId])
 }
-
 
 model AppointmentLog {
   id            String      @id @default(uuid())

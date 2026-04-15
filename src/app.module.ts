@@ -23,6 +23,7 @@ import { SalonOwnerAnalyticsModule } from './modules/tenancy/analytics/salonOwne
 import { ShiftModule } from './modules/tenancy/salons/shift-management/shift.module';
 import { AppointmentImportModule } from './modules/tenancy/appointments/import-appointment.module';
 import { ServiceImportModule } from './modules/tenancy/salons/services/import-services.module';
+import { EmployeeImportModule } from './modules/tenancy/salons/employee-management/import-employee.module';
 @Module({
   imports: [
     ThrottlerModule.forRoot([
@@ -54,6 +55,7 @@ import { ServiceImportModule } from './modules/tenancy/salons/services/import-se
     ShiftModule,
     AppointmentImportModule,
     ServiceImportModule,
+    EmployeeImportModule,
   ],
 })
 export class AppModule {}
