@@ -1,44 +1,47 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import {
   Controller,
-  UseGuards,
   Post,
-  Req,
-  Body,
   Get,
   Delete,
+  Body,
+  Query,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../../../../core/guards/jwt-auth.guard';
 import { EmployeeImportService } from './import-employee.service';
-import { stageEmployeeImportDto } from './dto/import-employee.dto';
-import { BulkEmployeeActionDto } from './dto/import-employee.dto';
+import { JwtAuthGuard } from '../../../../core/guards/jwt-auth.guard';
+import {
+  BulkEmployeeActionDto,
+  EmployeeImportQueryDto,
+  StageEmployeeImportDto,
+} from './dto/import-employee.dto';
 
-@Controller('/tenancy/salon/employee-import')
+@Controller('tenancy/employees/import')
 @UseGuards(JwtAuthGuard)
 export class EmployeeImportController {
   constructor(private readonly service: EmployeeImportService) {}
 
   @Post('stage')
-  async upload(@Req() req: any, @Body() dto: stageEmployeeImportDto) {
+  async upload(@Req() req: any, @Body() dto: StageEmployeeImportDto) {
     return this.service.stageData(req.user.salonId, dto.items);
   }
 
   @Get('staged-list')
-  async getList(@Req() req: any) {
+  async getList(@Req() req: any, @Query() query: EmployeeImportQueryDto) {
     return this.service.getStagedData(
       req.user.salonId,
-      Number(req.query.page) || 1,
-      Number(req.query.limit) || 10,
+      Number(query.page) || 1,
+      Number(query.limit) || 10,
     );
   }
 
   @Post('approve-mass')
   async approve(@Req() req: any, @Body() dto: BulkEmployeeActionDto) {
-    const currentUserId = req.user?.id ?? req.user?.sub;
-
+    const currentUserId = req.user.id ?? req.user.sub;
     return this.service.approveBulk(req.user.salonId, dto.ids, currentUserId);
   }
 

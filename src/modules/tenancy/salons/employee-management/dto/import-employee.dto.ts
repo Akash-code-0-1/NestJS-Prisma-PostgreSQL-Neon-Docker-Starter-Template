@@ -1,6 +1,6 @@
-import { IsArray, IsString, IsOptional, IsNumber } from 'class-validator';
+import { IsArray, IsOptional, IsString } from 'class-validator';
 
-export class stageEmployeeImportDto {
+export class StageEmployeeImportDto {
   @IsArray()
   items: any[];
 }
@@ -13,9 +13,10 @@ export class BulkEmployeeActionDto {
 
 export class EmployeeImportQueryDto {
   @IsOptional()
-  @IsNumber()
-  page?: number;
+  @IsString()
+  page?: string;
+
   @IsOptional()
-  @IsNumber()
-  limit?: number;
+  @IsString()
+  limit?: string;
 }

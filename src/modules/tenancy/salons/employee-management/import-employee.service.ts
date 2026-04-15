@@ -1,10 +1,10 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { RedisService } from '../../../../core/redis/redis.service';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../../core/prisma/prisma.service';
+import { RedisService } from '../../../../core/redis/redis.service';
 
 @Injectable()
 export class EmployeeImportService {
@@ -16,39 +16,38 @@ export class EmployeeImportService {
   ) {}
 
   async stageData(salonId: string, items: any[]) {
-    await this.prisma.stagedEmployee.createMany({
-      data: items.map((item) => ({
-        salonId,
-        externalId: item.id?.toString(),
-        firstName: item.firstName || item.name?.split(' ')[0] || 'New',
-        lastName:
-          item.lastName ||
-          item.name?.split(' ').slice(1).join(' ') ||
-          'Employee',
-        email: item.email,
-        phone: item.phone?.toString(),
-        gender: item.gender,
-        salary: parseFloat(item.salary) || 0,
-        designation: item.designation || item.role || 'Staff',
-        dob: item.dob,
-        address: item.address,
-        city: item.city,
-        province: item.province,
-        cap: item.cap?.toString(),
-        contractType: item.contractType || 'Full-Time',
-        taxIdCode: item.taxIdCode,
-        iban: item.iban,
-        startDate: item.startDate ? new Date(item.startDate) : new Date(),
-        endDate: item.endDate ? new Date(item.endDate) : new Date(),
-        remunerationType: item.remunerationType || 'Monthly',
-      })),
-    });
+    // 1. Map raw JSON/CSV data to StagedEmployee schema
+    const stagedData = items.map((item) => ({
+      salonId,
+      externalId: item.id?.toString(),
+      firstName: item.firstName || item.name?.split(' ')[0] || 'New',
+      lastName:
+        item.lastName || item.name?.split(' ').slice(1).join(' ') || 'Employee',
+      email: item.email,
+      phone: item.phone?.toString(),
+      gender: item.gender,
+      salary: parseFloat(item.salary) || 0,
+      designation: item.role || item.designation || 'Staff',
+      dob: item.dob,
+      address: item.address,
+      city: item.city,
+      province: item.province,
+      cap: item.cap?.toString(),
+      contractType: item.contractType,
+      taxIdCode: item.taxIdCode,
+      iban: item.iban,
+      startDate: item.startDate ? new Date(item.startDate) : new Date(),
+      endDate: item.endDate ? new Date(item.endDate) : new Date(),
+      remunerationType: item.remunerationType || 'Monthly',
+    }));
+
+    await this.prisma.stagedEmployee.createMany({ data: stagedData });
     await this.redis.flushByPrefix(`${this.CACHE_PREFIX}:${salonId}`);
   }
 
   async getStagedData(salonId: string, page = 1, limit = 5) {
-    const cachekey = `${this.CACHE_PREFIX}:${salonId}:${page}:${limit}`;
-    const cached = await this.redis.get(cachekey);
+    const cacheKey = `${this.CACHE_PREFIX}:${salonId}:${page}:${limit}`;
+    const cached = await this.redis.get(cacheKey);
     if (cached) return JSON.parse(cached as string);
 
     const skip = (page - 1) * limit;
@@ -61,11 +60,12 @@ export class EmployeeImportService {
         orderBy: { createdAt: 'desc' },
       }),
     ]);
+
     const result = {
       data,
       meta: { total, page, lastPage: Math.ceil(total / limit) },
     };
-    await this.redis.set(cachekey, JSON.stringify(result), 60);
+    await this.redis.set(cacheKey, JSON.stringify(result), 60);
     return result;
   }
 
@@ -75,10 +75,10 @@ export class EmployeeImportService {
     });
 
     if (items.length === 0)
-      throw new BadRequestException('No employees found to approve');
+      throw new BadRequestException('No records found to approve');
 
     return await this.prisma.$transaction(async (tx) => {
-      let approvedCount = 0;
+      let count = 0;
 
       for (const item of items) {
         const existing = await tx.user.findUnique({
@@ -86,7 +86,7 @@ export class EmployeeImportService {
         });
         if (existing) continue;
 
-        // 1. Create User
+        // 1. Create Global Identity
         const user = await tx.user.create({
           data: {
             firstName: item.firstName,
@@ -97,14 +97,14 @@ export class EmployeeImportService {
           },
         });
 
-        // 2. Create Employee Profile
+        // 2. Create Tenant-Specific Employee Profile
         await tx.employeeProfile.create({
           data: {
             userId: user.id,
             salonId,
             salary: item.salary,
-            designation: item.designation || 'Staff',
-            dob: item.dob || '',
+            designation: item.designation || 'Employee',
+            dob: item.dob || '1990-01-01',
             address: item.address || '',
             city: item.city || '',
             province: item.province || '',
@@ -121,7 +121,7 @@ export class EmployeeImportService {
           },
         });
 
-        // 3. Link to Salon
+        // 3. Register User to Salon
         await tx.salonUser.create({
           data: {
             userId: user.id,
@@ -130,21 +130,19 @@ export class EmployeeImportService {
           },
         });
 
-        approvedCount++;
+        count++;
       }
 
-      // 4. Cleanup Staged Table (Hard Delete)
+      // 4. Hard Delete from Staged Table
       await tx.stagedEmployee.deleteMany({
         where: { id: { in: ids }, salonId },
       });
 
-      // 5. Clear Caches
       await this.redis.flushByPrefix(`${this.CACHE_PREFIX}:${salonId}`);
-
       return {
         success: true,
-        count: approvedCount,
-        message: `${approvedCount} employees successfully imported and registered.`,
+        count,
+        message: `Successfully imported ${count} employees.`,
       };
     });
   }
@@ -154,10 +152,6 @@ export class EmployeeImportService {
       where: { id: { in: ids }, salonId },
     });
     await this.redis.flushByPrefix(`${this.CACHE_PREFIX}:${salonId}`);
-    return {
-      success: true,
-      count: result.count,
-      message: `${result.count} staged records deleted.`,
-    };
+    return { success: true, count: result.count };
   }
 }
