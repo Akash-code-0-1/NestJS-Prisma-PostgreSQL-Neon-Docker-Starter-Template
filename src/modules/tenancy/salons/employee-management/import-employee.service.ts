@@ -16,7 +16,6 @@ export class EmployeeImportService {
   ) {}
 
   async stageData(salonId: string, items: any[]) {
-    // 1. Map raw JSON/CSV data to StagedEmployee schema
     const stagedData = items.map((item) => ({
       salonId,
       externalId: item.id?.toString(),
@@ -86,7 +85,6 @@ export class EmployeeImportService {
         });
         if (existing) continue;
 
-        // 1. Create Global Identity
         const user = await tx.user.create({
           data: {
             firstName: item.firstName,
@@ -97,7 +95,6 @@ export class EmployeeImportService {
           },
         });
 
-        // 2. Create Tenant-Specific Employee Profile
         await tx.employeeProfile.create({
           data: {
             userId: user.id,
@@ -121,7 +118,6 @@ export class EmployeeImportService {
           },
         });
 
-        // 3. Register User to Salon
         await tx.salonUser.create({
           data: {
             userId: user.id,
@@ -133,7 +129,6 @@ export class EmployeeImportService {
         count++;
       }
 
-      // 4. Hard Delete from Staged Table
       await tx.stagedEmployee.deleteMany({
         where: { id: { in: ids }, salonId },
       });

@@ -311,14 +311,12 @@ model StagedEmployee {
   salonId    String
   externalId String? // e.g., #001 from CSV
 
-  // Basic Info
   firstName String
   lastName  String
   email     String
   phone     String?
   gender    String?
 
-  // Employment Details
   designation      String?
   salary           Float     @default(0)
   contractType     String?
@@ -327,11 +325,9 @@ model StagedEmployee {
   endDate          DateTime?
   remunerationType String?
 
-  // Professional / Tax Info
   taxIdCode String?
   iban      String?
 
-  // Address Info
   address  String?
   city     String?
   province String?
