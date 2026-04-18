@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';
 import Redis from 'ioredis';
@@ -30,5 +31,13 @@ export class RedisService implements OnModuleDestroy {
 
   async onModuleDestroy() {
     await this.redis.quit();
+  }
+
+  async ping(): Promise<string> {
+    try {
+      return await this.redis.ping();
+    } catch (error) {
+      return 'PONG_FAILED';
+    }
   }
 }

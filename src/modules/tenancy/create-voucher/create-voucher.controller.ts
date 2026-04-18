@@ -11,6 +11,7 @@ export class VoucherController {
     return this.service.create(salonId, dto);
   }
 
+  
   @Get()
   findAll(
     @Param('salonId') salonId: string,

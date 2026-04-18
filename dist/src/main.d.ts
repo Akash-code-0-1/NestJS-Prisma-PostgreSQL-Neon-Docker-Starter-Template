@@ -1,1 +1,1 @@
-export {};
+import '@pm2/io';

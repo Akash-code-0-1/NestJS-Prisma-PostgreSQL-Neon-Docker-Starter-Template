@@ -12,13 +12,18 @@ services:
       NODE_ENV: development
       REDIS_HOST: redis
       REDIS_PORT: "6379"
+      # PM2 Plus Keys from your screenshot
+      PM2_PUBLIC_KEY: ${PM2_PUBLIC_KEY}
+      PM2_SECRET_KEY: ${PM2_SECRET_KEY}
     ports:
       - "3001:3000"
       - "9229:9229"
     restart: always
     volumes:
       - .:/app:cached
-    command: npm run start:debug
+      - /app/node_modules
+    # Point command to PM2 instead of start:debug
+    command: pm2-runtime start dist/src/main.js --name "domenico-api" -i 4 --watch dist
 
   redis:
     image: redis:latest

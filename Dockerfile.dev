@@ -1,9 +1,13 @@
 FROM node:20-alpine
 
+# Install necessary build tools and PM2 globally
 RUN apk add --no-cache python3 make g++ bash
+RUN npm install -g pm2
+
 WORKDIR /app
 
 COPY package*.json ./
+# prisma 6 and your dependencies will be installed here based on package.json
 RUN npm install
 RUN npm install -g ts-node-dev @nestjs/cli
 
@@ -15,4 +19,5 @@ COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["npm", "run", "start:dev"]
+# The command is handled by the entrypoint, but we set the default here
+CMD ["pm2-runtime", "start", "dist/src/main.js", "--name", "domenico-api"]

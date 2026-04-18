@@ -99,7 +99,6 @@ export class SalonOwnerAnalyticsService {
     return { completed, booked };
   }
 
-  // ✅ FIXED (ORM instead of raw SQL — SAME RESULT)
   private async getWeeklyAppointmentChart(
     salonId: string,
     employeeId?: string,
