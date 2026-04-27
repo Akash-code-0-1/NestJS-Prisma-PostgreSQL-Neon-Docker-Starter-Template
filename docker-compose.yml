@@ -23,7 +23,7 @@ services:
       - .:/app:cached
       - /app/node_modules
     # Point command to PM2 instead of start:debug
-    command: pm2-runtime start dist/src/main.js --name "domenico-api" -i 4 --watch dist
+    command: pm2-runtime start dist/src/main.js --name "domenico-api" -i 1 --watch dist
 
   redis:
     image: redis:latest
